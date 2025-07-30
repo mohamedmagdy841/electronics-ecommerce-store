@@ -63,7 +63,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.email or self.phone_number or self.username
     
     class Meta:
-        ordering = ['-created_date']
+        ordering = ['-created_at']
 
 
 class UserProfile(models.Model):
