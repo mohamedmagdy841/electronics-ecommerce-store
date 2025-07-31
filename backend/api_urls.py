@@ -1,4 +1,4 @@
-from django.urls import path, include, re_path
+from django.urls import path, include
 
 from accounts.views import CustomLoginView, CustomRegisterView, SendOtpView, VerifyOtpView
 
@@ -10,5 +10,5 @@ urlpatterns = [
     path('auth/users/verify-otp/', VerifyOtpView.as_view(), name='verify-otp'),
     path('auth/', include('djoser.urls')),
     path('auth/', include('djoser.urls.jwt')),
-    re_path(r'^auth/', include('djoser.social.urls')),
+    path('auth/', include('djoser.social.urls'))
 ]
