@@ -1,0 +1,38 @@
+{% load i18n %}
+
+{% block subject %}
+{% blocktrans %}Activate your account on {{ site_name }}{% endblocktrans %}
+{% endblock subject %}
+
+{% block text_body %}
+{% blocktrans %}You're receiving this email because you need to finish the activation process on {{ site_name }}.{% endblocktrans %}
+
+{% trans "Please go to the following page to activate your account:" %}
+{{ protocol }}://{{ domain }}/{{ url|safe }}
+
+{% blocktrans %}If you face difficulties activating your account, contact us at: contact@electroshop.com{% endblocktrans %}
+{% endblock text_body %}
+
+{% block html_body %}
+<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; background-color: #f9f9f9; border-radius: 10px;">
+
+  <h2 style="color: #222;">Activate Your ElectroShop Account</h2>
+
+  <p style="font-size: 14px; color: #444;">
+    {% blocktrans %}You're receiving this email because you need to finish the activation process on {{ site_name }}.{% endblocktrans %}
+  </p>
+
+  <p style="margin: 30px 0;">
+    <a style="display: inline-block; padding: 12px 24px; background-color: #007bff; color: #fff; text-decoration: none; border-radius: 5px;"
+       href="{{ protocol }}://{{ domain }}/{{ url|safe }}">
+      Activate Account
+    </a>
+  </p>
+
+  <p style="font-size: 13px; color: #777;">
+    {% blocktrans %}If you face difficulties activating your account, contact us at:{% endblocktrans %}
+    <a href="mailto:contact@electroshop.com">contact@electroshop.com</a>
+  </p>
+
+</div>
+{% endblock html_body %}

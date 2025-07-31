@@ -3,7 +3,6 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, phone_number=None, **extra_fields):
-        print("📞 Received in create_user:", phone_number)
         if not email and not phone_number:
             raise ValueError('Users must provide either an email or phone number')
         
