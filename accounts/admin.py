@@ -10,7 +10,7 @@ class UserAdmin(admin.ModelAdmin):
     readonly_fields = ('last_login', 'date_joined', 'created_at', 'modified_at', 'password')
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
-        ('Personal info', {'fields': ('first_name', 'last_name', 'username')}),
+        ('Personal info', {'fields': ('first_name', 'last_name', 'username', 'phone_number')}),
         ('Permissions', {'fields': ('is_active', 'is_superuser', 'is_verified')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )

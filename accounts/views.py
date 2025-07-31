@@ -1,8 +1,11 @@
 from rest_framework.views import APIView
+from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
+from .serializers import CustomUserCreateSerializer
+from .models import User
 
 class CustomLoginView(APIView):
     def post(self, request):
@@ -19,3 +22,7 @@ class CustomLoginView(APIView):
             })
             
         return Response({'detail': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+    
+class CustomRegisterView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = CustomUserCreateSerializer

@@ -2,14 +2,15 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 
 class UserManager(BaseUserManager):
-    def create_user(self, email, password=None, **extra_fields):
-        if not email and not extra_fields.get('phone_number'):
+    def create_user(self, email, password=None, phone_number=None, **extra_fields):
+        print("📞 Received in create_user:", phone_number)
+        if not email and not phone_number:
             raise ValueError('Users must provide either an email or phone number')
         
         if email:
             email = self.normalize_email(email)
             
-        user = self.model(email=email, **extra_fields)
+        user = self.model(email=email, phone_number=phone_number, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user

@@ -2,7 +2,7 @@ from djoser.serializers import UserCreateSerializer as BaseUserCreateSerializer,
 from rest_framework import serializers
 from .models import User
 
-class CustomUserCreateSerializer(BaseUserCreateSerializer):
+class CustomUserCreateSerializer(BaseUserCreateSerializer):    
     class Meta(BaseUserCreateSerializer.Meta):
         model = User
         fields = ['id', 'first_name', 'last_name', 'username', 'email', 'phone_number', 'password']
@@ -12,9 +12,6 @@ class CustomUserCreateSerializer(BaseUserCreateSerializer):
             raise serializers.ValidationError("Provide either email or phone number.")
         return attrs
     
-    def create(self, validated_data):
-        validated_data['role'] = User.CUSTOMER
-        return super().create(validated_data)
 
 class CustomUserSerializer(BaseUserSerializer):
     class Meta(BaseUserSerializer.Meta):
@@ -23,3 +20,6 @@ class CustomUserSerializer(BaseUserSerializer):
             'id', 'first_name', 'last_name', 'username',
             'email', 'phone_number', 'role', 'is_active'
         ]
+        
+    def get_role(self, obj):
+        return obj.get_role_display().lower()
