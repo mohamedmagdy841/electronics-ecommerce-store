@@ -11,6 +11,10 @@ class CustomUserCreateSerializer(BaseUserCreateSerializer):
         if not attrs.get('email') and not attrs.get('phone_number'):
             raise serializers.ValidationError("Provide either email or phone number.")
         return attrs
+    
+    def create(self, validated_data):
+        validated_data['role'] = User.CUSTOMER
+        return super().create(validated_data)
 
 class CustomUserSerializer(BaseUserSerializer):
     class Meta(BaseUserSerializer.Meta):

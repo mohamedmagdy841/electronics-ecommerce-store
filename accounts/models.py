@@ -43,7 +43,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=50, unique=True)
     email = models.EmailField(unique=True, null=True, blank=True)
     phone_number = models.CharField(max_length=50, unique=True, null=True, blank=True)
-    role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES)
+    role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES, default=CUSTOMER)
     
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
