@@ -31,7 +31,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     'rest_framework',
-    'rest_framework_simplejwt',
+    'djoser',
+    'social_django',
     'accounts',
 ]
 
@@ -43,6 +44,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'social_django.middleware.SocialAuthExceptionMiddleware',
 ]
 
 ROOT_URLCONF = 'backend.urls'
@@ -128,6 +130,8 @@ EMAIL_USE_TLS = True
 
 
 AUTHENTICATION_BACKENDS = [
+    'social_core.backends.google.GoogleOAuth2',
+    'social_core.backends.github.GithubOAuth2',
     'accounts.backends.EmailOrPhoneBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
@@ -164,6 +168,23 @@ DJOSER = {
         'confirmation': 'accounts.email.ConfirmationEmail',
         'password_reset': 'accounts.email.PasswordResetEmail',
         'password_changed_confirmation': 'accounts.email.PasswordChangedConfirmationEmail',
-    }
+    },
+    'SOCIAL_AUTH_ALLOWED_REDIRECT_URIS': [
+        'http://localhost:3000/social/callback/',
+    ],
+    'SOCIAL_AUTH_TOKEN_STRATEGY': 'djoser.social.token.jwt.TokenStrategy',
 }
 
+# Google OAuth2 keys
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.environ.get('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY')
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.environ.get('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET')
+
+# Github OAuth2 keys
+SOCIAL_AUTH_GITHUB_KEY = os.environ.get('SOCIAL_AUTH_GITHUB_KEY')
+SOCIAL_AUTH_GITHUB_SECRET = os.environ.get('SOCIAL_AUTH_GITHUB_SECRET')
+
+# Required by social-auth-app-django
+SOCIAL_AUTH_JSONFIELD_ENABLED = True
+LOGIN_REDIRECT_URL = '/'
+
+SOCIAL_AUTH_GITHUB_SCOPE = ['user:email']
