@@ -159,5 +159,11 @@ DJOSER = {
     'ACTIVATION_URL': 'activate/{uid}/{token}',
     'DOMAIN': '127.0.0.1:8000',
     'SITE_NAME': 'ElectroShop',
+    "EMAIL": {
+        'activation': 'accounts.email.ActivationEmail',
+        'confirmation': 'accounts.email.ConfirmationEmail',
+        'password_reset': 'accounts.email.PasswordResetEmail',
+        'password_changed_confirmation': 'accounts.email.PasswordChangedConfirmationEmail',
+    }
 }
 
