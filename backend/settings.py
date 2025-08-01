@@ -33,7 +33,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'djoser',
     'social_django',
+    
     'accounts',
+    'products'
 ]
 
 MIDDLEWARE = [
