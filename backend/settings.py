@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'djoser',
     'social_django',
+    'import_export',
     
     'accounts',
     'products'
