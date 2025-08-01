@@ -95,7 +95,7 @@ class ProductSpecification(models.Model):
 
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to="products/")
+    url = models.ImageField(upload_to="products/")
     alt_text = models.CharField(max_length=255, blank=True, null=True, help_text="Alternative text for accessibility/SEO.")
     caption = models.CharField(max_length=255, blank=True, null=True, help_text="Short caption or description of the image.")
     is_primary = models.BooleanField(default=False)
