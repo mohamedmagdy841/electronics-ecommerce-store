@@ -1,8 +1,9 @@
 from django.urls import path, include
 
 from accounts.views import CustomLoginView, CustomRegisterView, SendOtpView, VerifyOtpView
-
+from products.views import CategoryListAPIView, SubCategoryListAPIView
 urlpatterns = [
+    # Accounts
     path('accounts/', include('accounts.urls')),
     path('auth/users/login/', CustomLoginView.as_view(), name='custom-login'),
     path("auth/users/", CustomRegisterView.as_view(), name="custom-register"),
@@ -12,5 +13,10 @@ urlpatterns = [
     path('auth/', include('djoser.urls.jwt')),
     path('auth/', include('djoser.social.urls')),
     
-    path('products/', include('products.urls'))
+    # Products
+    path('products/', include('products.urls')),
+    
+    # Categories
+    path("categories/", CategoryListAPIView.as_view()),
+    path("subcategories/", SubCategoryListAPIView.as_view()),
 ]

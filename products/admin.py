@@ -45,7 +45,7 @@ class BrandAdmin(ImportExportModelAdmin):
 class ProductAdmin(ImportExportModelAdmin):
     list_display = [
         'id', 'name', 'brand', 'category', 'price',
-        'is_featured', 'condition', 'created_at'
+        'is_featured', 'is_weekly_deal', 'condition', 'created_at'
     ]
     list_filter = ['category', 'brand', 'is_featured', 'condition']
     search_fields = ['name', 'sku', 'slug']

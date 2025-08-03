@@ -66,6 +66,8 @@ class Product(models.Model):
         choices=ConditionStatus.choices
     )
     is_featured = models.BooleanField(default=False)
+    is_weekly_deal = models.BooleanField(default=False)
+    weekly_deal_expires = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

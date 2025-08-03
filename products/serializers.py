@@ -7,41 +7,32 @@ class CategorySerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Category
-        fields = [
-            'id', 'name', 'slug', 'description', 'is_active',
-            'parent', 'children','created_at', 'updated_at'
-        ]
+        fields = ['name', 'slug', 'parent', 'children']
 
 class BrandSerializer(serializers.ModelSerializer):
     class Meta:
         model = Brand
-        fields = ['id', 'name', 'slug', 'created_at', 'updated_at']
+        fields = ['name', 'slug', 'created_at']
 
 class SpecificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Specification
-        fields = ['id', 'name', 'created_at', 'updated_at']
+        fields = ['name', 'created_at']
 
 class ProductImageSerializer(serializers.ModelSerializer):
     url = serializers.ImageField(use_url=True)
     class Meta:
         model = ProductImage
-        fields = [
-            'id', 'url', 'alt_text', 'caption', 'is_primary',
-            'created_at', 'updated_at'
-        ]
+        fields = ['url', 'alt_text', 'caption', 'is_primary']
 
 class ProductSpecificationSerializer(serializers.ModelSerializer):
     specification = serializers.StringRelatedField()
     
     class Meta:
         model = ProductSpecification
-        fields = [
-            'id', 'specification', 'value',
-            'created_at', 'updated_at'
-        ]
+        fields = ['specification', 'value', 'created_at']
         
-class ProductSerializer(serializers.ModelSerializer):
+class ProductDetailSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     brand = BrandSerializer(read_only=True)
     images = ProductImageSerializer(many=True, read_only=True)
@@ -50,11 +41,21 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            'id', 'category', 'brand',
+            'category', 'brand',
             'name', 'slug', 'description',
             'price', 'discounted_price', 'sku',
             'warranty_years', 'condition',
             'is_featured',
             'images', 'specs',
-            'created_at', 'updated_at'
+            'created_at'
+        ]
+
+class ProductSerializer(serializers.ModelSerializer):
+    images = ProductImageSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = Product
+        fields = [
+            'name', 'slug', 'description', 'price',
+            'discounted_price', 'images'
         ]
