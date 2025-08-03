@@ -7,6 +7,7 @@ from .serializers import (
     CategorySerializer,
 )
 from .pagination import CustomProductPagination
+from django.core.cache import cache
 
 class ProductListAPIView(generics.ListAPIView):
     serializer_class = ProductSerializer
@@ -35,24 +36,35 @@ class LatestProductListAPIView(generics.ListAPIView):
     serializer_class = ProductSerializer
     
     def get_queryset(self):
-        return Product.objects.prefetch_related('images').order_by('-created_at')[:9]
+        products = cache.get("latest_products")
+        
+        if products is None:
+            products = Product.objects.prefetch_related('images').order_by('-created_at')[:9]
+            cache.set("latest_products", products, timeout=60*60)
+            
+        return products
     
 class WeeklyDealProductAPIView(generics.RetrieveAPIView):
     serializer_class = ProductSerializer
     
     def get_object(self):
         now = timezone.now()
-        product = (
-            Product.objects
-            .filter(is_weekly_deal=True,weekly_deal_expires__gte=now)
-            .prefetch_related('images')
-            .order_by('weekly_deal_expires')
-            .first()
-        )
+        product = cache.get("weekly_deal_product")
         
-        if not product:
-            from rest_framework.exceptions import NotFound
-            raise NotFound("No active weekly deal.")
+        if product is None:
+            product = (
+                Product.objects
+                .filter(is_weekly_deal=True,weekly_deal_expires__gte=now)
+                .prefetch_related('images')
+                .order_by('weekly_deal_expires')
+                .first()
+            )
+            
+            if not product:
+                from rest_framework.exceptions import NotFound
+                raise NotFound("No active weekly deal.")
+            cache.set("weekly_deal_product", product, timeout=60*60)
+
         return product 
         
     ## Most Popular Products
@@ -61,12 +73,24 @@ class CategoryListAPIView(generics.ListAPIView):
     serializer_class = CategorySerializer
     
     def get_queryset(self):
-        return Category.objects.filter(parent__isnull=True, is_active=True).prefetch_related('children')[:9]
+        categories = cache.get("category_list")
+        
+        if categories is None:
+            categories = Category.objects.filter(parent__isnull=True, is_active=True).prefetch_related('children')[:9]
+            cache.set("category_list", categories, timeout=60*60)
+
+        return categories
     
 class SubCategoryListAPIView(generics.ListAPIView):
     serializer_class = CategorySerializer
     
     def get_queryset(self):
-        return Category.objects.filter(parent__isnull=False)[:9]
+        categories = cache.get("subcategory_list")
+        
+        if categories is None:
+            categories = Category.objects.filter(parent__isnull=False)[:9]
+            cache.set("subcategory_list", categories, timeout=60*60)
+            
+        return categories 
 
 
