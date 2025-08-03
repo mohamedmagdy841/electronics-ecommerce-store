@@ -10,5 +10,7 @@ urlpatterns = [
     path('auth/users/verify-otp/', VerifyOtpView.as_view(), name='verify-otp'),
     path('auth/', include('djoser.urls')),
     path('auth/', include('djoser.urls.jwt')),
-    path('auth/', include('djoser.social.urls'))
+    path('auth/', include('djoser.social.urls')),
+    
+    path('products/', include('products.urls'))
 ]

@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'djoser',
     'social_django',
     'import_export',
+    "debug_toolbar",
     
     'accounts',
     'products'
@@ -48,6 +49,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'social_django.middleware.SocialAuthExceptionMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware'
 ]
 
 ROOT_URLCONF = 'backend.urls'
@@ -177,6 +179,11 @@ DJOSER = {
     ],
     'SOCIAL_AUTH_TOKEN_STRATEGY': 'djoser.social.token.jwt.TokenStrategy',
 }
+
+INTERNAL_IPS = [
+    "127.0.0.1",
+    "localhost"
+]
 
 # Google OAuth2 keys
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.environ.get('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY')
