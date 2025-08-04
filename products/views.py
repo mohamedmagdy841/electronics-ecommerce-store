@@ -1,10 +1,11 @@
 from rest_framework import generics
 from django.utils import timezone
-from .models import Product, Category
+from .models import Brand, Product, Category
 from .serializers import (
     ProductSerializer,
     ProductDetailSerializer,
     CategorySerializer,
+    BrandSerializer
 )
 from .pagination import CustomProductPagination
 from django.core.cache import cache
@@ -41,6 +42,14 @@ class ProductDetailAPIView(generics.RetrieveAPIView):
         ).prefetch_related(
             'images', 'specs__specification', 'category__children'
         )
+
+class SubcategoryListByCategoryAPIView(generics.ListAPIView):
+    serializer_class = CategorySerializer
+    
+    def get_queryset(self):
+        parent_slug = self.kwargs['slug']
+        return Category.objects.filter(parent__slug=parent_slug)
+         
 
 # Home Page Views
 class LatestProductListAPIView(generics.ListAPIView):
@@ -104,4 +113,6 @@ class SubCategoryListAPIView(generics.ListAPIView):
             
         return categories 
 
-
+class BrandListAPIView(generics.ListAPIView):
+    queryset = Brand.objects.all()
+    serializer_class = BrandSerializer

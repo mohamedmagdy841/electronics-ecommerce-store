@@ -1,7 +1,18 @@
 from django.urls import path, include
 
-from accounts.views import CustomLoginView, CustomRegisterView, SendOtpView, VerifyOtpView
-from products.views import CategoryListAPIView, SubCategoryListAPIView
+from accounts.views import (
+    CustomLoginView,
+    CustomRegisterView,
+    SendOtpView, VerifyOtpView
+)
+
+from products.views import (
+    CategoryListAPIView,
+    SubCategoryListAPIView,
+    BrandListAPIView,
+    SubcategoryListByCategoryAPIView
+)
+
 urlpatterns = [
     # Accounts
     path('accounts/', include('accounts.urls')),
@@ -19,4 +30,8 @@ urlpatterns = [
     # Categories
     path("categories/", CategoryListAPIView.as_view()),
     path("subcategories/", SubCategoryListAPIView.as_view()),
+    path("categories/<slug:slug>/subcategories/", SubcategoryListByCategoryAPIView.as_view()),
+    
+    # Brands
+    path("brands/", BrandListAPIView.as_view())
 ]
