@@ -15,9 +15,14 @@ from rest_framework import filters
 class ProductListAPIView(generics.ListAPIView):
     serializer_class = ProductSerializer
     pagination_class = CustomProductPagination
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter
+    ]
     filterset_class = ProductFilter
-    search_fields = ['name', 'description', 'brand__name', 'category__name']
+    search_fields = ['name', 'description', 'brand__name', 'category__name', 'sku']
+    ordering_fields = ['price', 'created_at']
     
     def get_queryset(self):
         return Product.objects.select_related(
