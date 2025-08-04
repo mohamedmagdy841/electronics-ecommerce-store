@@ -8,10 +8,16 @@ from .serializers import (
 )
 from .pagination import CustomProductPagination
 from django.core.cache import cache
+from django_filters.rest_framework import DjangoFilterBackend
+from .filters import ProductFilter
+from rest_framework import filters
 
 class ProductListAPIView(generics.ListAPIView):
     serializer_class = ProductSerializer
     pagination_class = CustomProductPagination
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_class = ProductFilter
+    search_fields = ['name', 'description', 'brand__name', 'category__name']
     
     def get_queryset(self):
         return Product.objects.select_related(

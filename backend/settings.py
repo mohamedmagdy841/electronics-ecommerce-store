@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'social_django',
     'import_export',
     "debug_toolbar",
+    'django_filters',
     
     'accounts',
     'products'
