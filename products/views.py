@@ -208,8 +208,14 @@ class ProductReviewListAPIView(generics.ListCreateAPIView):
         product = self.product
         return (
             ProductReview.objects
-            .filter(product=product)
+            .filter(product=product, parent__isnull=True)
             .select_related('user')
+            .prefetch_related(
+                Prefetch(
+                    'replies',
+                    queryset=ProductReview.objects.select_related('user').order_by('created_at', 'id')
+                )
+            )
             .order_by("-created_at", "-id")
         )
     

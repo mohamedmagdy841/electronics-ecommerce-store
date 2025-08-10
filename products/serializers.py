@@ -143,20 +143,51 @@ class ProductSerializer(serializers.ModelSerializer):
         return None
 
 
-class ProductReviewSerializer(serializers.ModelSerializer):
-    # user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+class ReviewReplySerializer(serializers.ModelSerializer):
     user = serializers.CharField(source="user.username", read_only=True)
+    class Meta:
+        model = ProductReview
+        fields = ["id", "user", "content", "created_at"]
+
+class ProductReviewSerializer(serializers.ModelSerializer):
+    user = serializers.CharField(source="user.username", read_only=True)
+    parent = serializers.PrimaryKeyRelatedField(
+        queryset=ProductReview.objects.all(), required=False, allow_null=True
+    )
+    replies = ReviewReplySerializer(many=True, read_only=True)
     
     class Meta:
         model = ProductReview
-        fields = ['id', 'user', 'content', 'rating', 'created_at']
+        fields = ['id', 'user', 'content', 'rating', 'parent', 'created_at', 'replies']
+        read_only_fields = ["id", "user", "created_at", "replies"]
     
     def validate(self, attrs):
-        if self.instance is None:
-            if ProductReview.objects.filter(
-                user=self.context['request'].user,
-                product=self.context['product']
-            ).exists():
+        request = self.context["request"]
+        product = self.context["product"]
+        parent = attrs.get("parent")
+        
+        # If replying
+        if parent:
+            # Prevents replying to a reply
+            if parent.parent_id is not None:
+                raise serializers.ValidationError("Replies are limited to one level.")
+
+            # No replying to a review on another product
+            if parent.product_id != product.id:
+                raise serializers.ValidationError("Parent review belongs to a different product.")
+
+            # Ratings are only for top-level reviews
+            if attrs.get("rating") is not None:
+                raise serializers.ValidationError("Replies cannot include a rating.")
+
+        # If top-level
+        else:
+            # Rating is required for top-level reviews
+            if attrs.get("rating") is None:
+                raise serializers.ValidationError("Rating is required for a review.")
+
+            # Stops duplicate top-level reviews from the same user
+            if ProductReview.objects.filter(user=request.user, product=product, parent__isnull=True).exists():
                 raise serializers.ValidationError("You have already reviewed this product.")
         return attrs
     

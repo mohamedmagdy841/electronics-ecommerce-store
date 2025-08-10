@@ -160,8 +160,11 @@ class ProductReview(models.Model):
         FIVE = 5, "5"
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reviews')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews', db_index=True)
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, related_name='replies', null=True, blank=True)
     content = models.TextField()
     rating = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
         choices=Rating.choices,
         validators=[MinValueValidator(1), MaxValueValidator(5)]
     )
@@ -169,10 +172,23 @@ class ProductReview(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        ordering = ['-created_at']
         constraints = [
-            models.UniqueConstraint(fields=['user', 'product'], name='unique_review_per_user_product'),
-            models.CheckConstraint(check=Q(rating__gte=1, rating__lte=5), name='rating_range')
+            models.UniqueConstraint(
+                fields=['user', 'product'],
+                condition=Q(parent__isnull=True),
+                name='unique_review_per_user_product'
+            ),
+            models.CheckConstraint(
+                check=Q(rating__isnull=True) | Q(rating__gte=1, rating__lte=5),
+                name='rating_range'
+            )
+        ]
+        
+        indexes = [
+            # Speeds up listing top-level reviews
+            models.Index(fields=['product', '-created_at', '-id']),
+            # Speeds up listing replies to a review
+            models.Index(fields=['parent', 'created_at', 'id']),
         ]
     
     def __str__(self):
