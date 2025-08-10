@@ -5,6 +5,8 @@ from .models import (
 )
 from django.utils.html import format_html
 from import_export.admin import ImportExportModelAdmin
+from django.forms.models import BaseInlineFormSet
+from django.core.exceptions import ValidationError
 
 # ---- Inline for Product Images ----
 class ProductImageInline(admin.TabularInline):
@@ -22,6 +24,26 @@ class ProductImageInline(admin.TabularInline):
 class ProductSpecificationInline(admin.TabularInline):
     model = ProductSpecification
     extra = 1
+
+# ---- Formset for Product Variants ----
+class ProductVariantInlineFormSet(BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        if any(self.errors):
+            return
+
+        variants = [form.cleaned_data for form in self.forms if not form.cleaned_data.get('DELETE', False)]
+        if variants:
+            if not any(v.get('is_default') for v in variants):
+                raise ValidationError("The first variant for a product must be marked as default.")
+            
+# ---- Inline for Product Variants ----
+class ProductVariantInline(admin.TabularInline):
+    model = ProductVariant
+    extra = 1
+    min_num = 1
+    validate_min = True
+    formset = ProductVariantInlineFormSet
 
 # ---- Category ----
 @admin.register(Category)
@@ -50,9 +72,10 @@ class ProductAdmin(ImportExportModelAdmin):
     list_filter = ['category', 'brand', 'is_featured', 'condition']
     search_fields = ['name', 'sku', 'slug']
     prepopulated_fields = {"slug": ("name",)}
-    inlines = [ProductImageInline, ProductSpecificationInline]
+    inlines = [ProductImageInline, ProductSpecificationInline, ProductVariantInline]
     ordering = ['-created_at']
     readonly_fields = ['created_at', 'updated_at']
+    
 
 # ---- Specification ----
 @admin.register(Specification)

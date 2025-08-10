@@ -1,9 +1,11 @@
 import uuid
+from decimal import Decimal
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.utils.text import slugify
 from django.db.models import Q
 from django.conf import settings
+from django.core.exceptions import ValidationError
 
 class Category(models.Model):
     parent = models.ForeignKey(
@@ -112,8 +114,41 @@ class ProductVariant(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['product'],
+                condition=Q(is_default=True),
+                name='unique_default_variant_per_product'
+            )
+        ]
+        
     def __str__(self):
         return f"{self.product.name} - {self.sku}"
+    
+    def clean(self):
+        # Price must be non-negative
+        if self.price is not None and self.price < Decimal('0'):
+            raise ValidationError({"price": "Price cannot be negative."})
+        # Discounted price checks
+        if self.discounted_price is not None:
+            if self.discounted_price < Decimal('0'):
+                raise ValidationError({"discounted_price": "Discounted price cannot be negative."})
+            if self.discounted_price > self.price:
+                raise ValidationError({"discounted_price": "Discounted price cannot exceed the main price."})
+            
+        # First variant must be default — only if product already exists
+        if not self.pk and self.product_id:
+            if not self.product.variants.exists() and not self.is_default:
+                raise ValidationError({"is_default": "The first variant for a product must be marked as default."})
+            
+    def save(self, *args, **kwargs):
+        if not self.sku:
+            brand_part = slugify(str(self.product.brand))[:6] or "brand"
+            name_part = slugify(self.product.name)[:6] or "prod"
+            self.sku = f"{brand_part}-{name_part}-{uuid.uuid4().hex[:6]}"
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
 class VariantSpecification(models.Model):
     variant = models.ForeignKey(ProductVariant, on_delete=models.CASCADE, related_name='specs')
