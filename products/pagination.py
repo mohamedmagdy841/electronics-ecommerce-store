@@ -1,4 +1,4 @@
-from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
+from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination, CursorPagination
 from rest_framework.response import Response
 
 class CustomProductPagination(PageNumberPagination):
@@ -22,3 +22,10 @@ class CustomProductPagination(PageNumberPagination):
 class RelatedLimitOffset(LimitOffsetPagination):
     default_limit = 4
     max_limit = 24
+
+
+class ReviewCursorPagination(CursorPagination):
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 50
+    ordering = ("-created_at", "-id")

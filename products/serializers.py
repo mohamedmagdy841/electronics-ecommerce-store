@@ -1,5 +1,15 @@
 from rest_framework import serializers
-from .models import Category, Brand, Product, ProductVariant, Specification, ProductSpecification, ProductImage, VariantSpecification
+from .models import (
+    Category,
+    Brand,
+    Product,
+    ProductVariant,
+    Specification,
+    ProductSpecification,
+    ProductImage,
+    VariantSpecification,
+    ProductReview
+)
 
 class CategorySerializer(serializers.ModelSerializer):
     parent = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -55,7 +65,8 @@ class ProductDetailVariantSerializer(serializers.ModelSerializer):
             'specs',
             'images'
         ]
-     
+
+# Product Detail Serializer
 class ProductDetailSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     brand = BrandSerializer(read_only=True)
@@ -65,6 +76,10 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     
     price_range = serializers.SerializerMethodField()
     selected_variant = serializers.SerializerMethodField()
+    
+    avg_rating = serializers.FloatField(read_only=True)
+    review_count = serializers.IntegerField(read_only=True)
+    rating_distribution = serializers.SerializerMethodField()
     
     class Meta:
         model = Product
@@ -76,6 +91,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'images', 'specs',
             'variants',
             'price_range','selected_variant',
+            'avg_rating', 'review_count', 'rating_distribution',
             'created_at'
         ]
     
@@ -96,6 +112,12 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         variants = list(obj.variants.all())
         variant = next((v for v in variants if v.sku == variant_param or str(v.id) == variant_param), None)
         return ProductDetailVariantSerializer(variant).data if variant else None
+    
+    def get_rating_distribution(self, obj):
+        # Only if you added r1..r5 in the queryset
+        if hasattr(obj, "r1"):
+            return [obj.r1, obj.r2, obj.r3, obj.r4, obj.r5]
+        return None
 
 class ProductVariantSerializer(serializers.ModelSerializer):
     class Meta:
@@ -121,3 +143,28 @@ class ProductSerializer(serializers.ModelSerializer):
         return None
 
 
+class ProductReviewSerializer(serializers.ModelSerializer):
+    # user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    user = serializers.CharField(source="user.username", read_only=True)
+    
+    class Meta:
+        model = ProductReview
+        fields = ['id', 'user', 'content', 'rating', 'created_at']
+    
+    def validate(self, attrs):
+        if self.instance is None:
+            if ProductReview.objects.filter(
+                user=self.context['request'].user,
+                product=self.context['product']
+            ).exists():
+                raise serializers.ValidationError("You have already reviewed this product.")
+        return attrs
+    
+    def create(self, validated_data):
+        request = self.context.get('request')
+        product = self.context.get('product')
+        return ProductReview.objects.create(
+            user=request.user,
+            product=product,
+            **validated_data
+        )

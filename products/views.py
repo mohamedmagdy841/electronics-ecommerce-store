@@ -1,14 +1,19 @@
-from django.db.models import Prefetch
+from django.db.models import Avg, Count, Prefetch, Q
+from django.db.models.functions import Coalesce
 from rest_framework import generics
 from django.utils import timezone
-from .models import Brand, Product, Category, ProductImage, ProductVariant
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+
+from products.permissions import IsOwnerOrReadOnly
+from .models import Brand, Product, Category, ProductImage, ProductReview, ProductVariant
 from .serializers import (
+    ProductReviewSerializer,
     ProductSerializer,
     ProductDetailSerializer,
     CategorySerializer,
     BrandSerializer
 )
-from .pagination import CustomProductPagination, RelatedLimitOffset
+from .pagination import CustomProductPagination, RelatedLimitOffset, ReviewCursorPagination
 from django.core.cache import cache
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import ProductFilter
@@ -62,7 +67,16 @@ class ProductDetailAPIView(generics.RetrieveAPIView):
                     .order_by('-is_default', 'id')
                 )
             ),
-        )
+        ).annotate(
+                avg_rating=Coalesce(Avg("reviews__rating"), 0.0),
+                review_count=Count("reviews", distinct=True),
+                # star distribution
+                r1=Count("reviews", filter=Q(reviews__rating=1)),
+                r2=Count("reviews", filter=Q(reviews__rating=2)),
+                r3=Count("reviews", filter=Q(reviews__rating=3)),
+                r4=Count("reviews", filter=Q(reviews__rating=4)),
+                r5=Count("reviews", filter=Q(reviews__rating=5)),
+            )
     
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -176,3 +190,40 @@ class SubCategoryListAPIView(generics.ListAPIView):
 class BrandListAPIView(generics.ListAPIView):
     queryset = Brand.objects.all()
     serializer_class = BrandSerializer
+
+# Product Review 
+class ProductReviewListAPIView(generics.ListCreateAPIView):
+    serializer_class = ProductReviewSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    pagination_class = ReviewCursorPagination
+    
+    @cached_property
+    def product(self):
+        try:
+            return Product.objects.get(slug=self.kwargs['slug'])
+        except Product.DoesNotExist:
+            raise NotFound("Product not found.")
+        
+    def get_queryset(self):
+        product = self.product
+        return (
+            ProductReview.objects
+            .filter(product=product)
+            .select_related('user')
+            .order_by("-created_at", "-id")
+        )
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['product'] = self.product
+        return context
+    
+    def perform_create(self, serializer):
+        serializer.save()
+
+class ProductReviewDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = ProductReview.objects.select_related("user", "product")
+    serializer_class = ProductReviewSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+
+    
