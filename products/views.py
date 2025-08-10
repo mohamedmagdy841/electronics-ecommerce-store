@@ -8,11 +8,13 @@ from .serializers import (
     CategorySerializer,
     BrandSerializer
 )
-from .pagination import CustomProductPagination
+from .pagination import CustomProductPagination, RelatedLimitOffset
 from django.core.cache import cache
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import ProductFilter
 from rest_framework import filters
+from rest_framework.exceptions import NotFound
+from django.utils.functional import cached_property
 
 class ProductListAPIView(generics.ListAPIView):
     serializer_class = ProductSerializer
@@ -73,6 +75,40 @@ class SubcategoryListByCategoryAPIView(generics.ListAPIView):
     def get_queryset(self):
         parent_slug = self.kwargs['slug']
         return Category.objects.filter(parent__slug=parent_slug)
+    
+class RelatedProductListAPIView(generics.ListAPIView):
+    serializer_class = ProductSerializer
+    pagination_class = RelatedLimitOffset
+    
+    @cached_property
+    def product(self):
+        slug = self.kwargs['slug']
+        try:
+            return Product.objects.select_related("category", "brand").get(slug=slug)
+        except Product.DoesNotExist:
+            raise NotFound("Product not found.")
+    
+    def get_queryset(self):
+        product = self.product
+        
+        return (Product.objects
+                .filter(category=product.category)
+                .exclude(id=product.id)
+                .select_related("brand")
+                .prefetch_related(
+                    Prefetch(
+                        "images",
+                        queryset=(
+                            ProductImage.objects
+                            .filter(variant__isnull=True)
+                            .order_by("-is_primary")
+                        ),
+                        to_attr="primary_images"
+                    ),
+                    Prefetch("variants", queryset=ProductVariant.objects.order_by('-is_default','id'))
+                )
+                .order_by("-is_featured", "-created_at")
+                )
          
 
 # Home Page Views

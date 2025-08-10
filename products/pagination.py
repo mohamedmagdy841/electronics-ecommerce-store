@@ -1,4 +1,4 @@
-from rest_framework.pagination import PageNumberPagination
+from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
 from rest_framework.response import Response
 
 class CustomProductPagination(PageNumberPagination):
@@ -17,3 +17,8 @@ class CustomProductPagination(PageNumberPagination):
             },
             'products': data
         })
+
+
+class RelatedLimitOffset(LimitOffsetPagination):
+    default_limit = 4
+    max_limit = 24

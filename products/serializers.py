@@ -104,7 +104,7 @@ class ProductVariantSerializer(serializers.ModelSerializer):
 
 # Product List Serializer
 class ProductSerializer(serializers.ModelSerializer):
-    images = ProductImageSerializer(many=True, read_only=True)
+    images = ProductImageSerializer(source='primary_images', many=True, read_only=True)
     default_variant = serializers.SerializerMethodField()
     
     class Meta:

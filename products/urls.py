@@ -10,5 +10,6 @@ urlpatterns = [
     path("weekly-deal/", views.WeeklyDealProductAPIView.as_view()),
     
     path("<slug:slug>/", views.ProductDetailAPIView.as_view()),
+    path("related/<slug:slug>/", views.RelatedProductListAPIView.as_view()),
 ] + debug_toolbar_urls()
 
