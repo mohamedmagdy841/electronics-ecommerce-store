@@ -59,9 +59,12 @@ class ProductDetailVariantSerializer(serializers.ModelSerializer):
 class ProductDetailSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     brand = BrandSerializer(read_only=True)
-    images = ProductImageSerializer(many=True, read_only=True)
+    images = ProductImageSerializer(source='primary_images', many=True, read_only=True)
     specs = ProductSpecificationSerializer(many=True, read_only=True)
-    variants = ProductDetailVariantSerializer(many=True, read_only=True) 
+    variants = ProductDetailVariantSerializer(many=True, read_only=True)
+    
+    price_range = serializers.SerializerMethodField()
+    selected_variant = serializers.SerializerMethodField()
     
     class Meta:
         model = Product
@@ -72,14 +75,34 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'is_featured',
             'images', 'specs',
             'variants',
+            'price_range','selected_variant',
             'created_at'
         ]
+    
+    def get_price_range(self, obj):
+        vs = list(obj.variants.all())
+        if not vs:
+            return None
+        prices = [(v.discounted_price or v.price) for v in vs]
+        return {
+            'min': str(min(prices)),
+            'max': str(max(prices))
+        }
+        
+    def get_selected_variant(self, obj):
+        variant_param = self.context.get('variant_param')
+        if not variant_param:
+            return None
+        variants = list(obj.variants.all())
+        variant = next((v for v in variants if v.sku == variant_param or str(v.id) == variant_param), None)
+        return ProductDetailVariantSerializer(variant).data if variant else None
 
 class ProductVariantSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductVariant
         fields = ['price', 'discounted_price']
 
+# Product List Serializer
 class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
     default_variant = serializers.SerializerMethodField()
@@ -89,11 +112,6 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = [
             'name', 'slug', 'description', 'images', 'default_variant'
         ]
-        
-    # Product.objects.prefetch_related(
-    #     'images',
-    #     Prefetch('variants', queryset=ProductVariant.objects.order_by('-is_default', 'id'))
-    # )
         
     def get_default_variant(self, obj):
         variants = list(obj.variants.all())

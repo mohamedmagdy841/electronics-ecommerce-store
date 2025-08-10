@@ -1,6 +1,7 @@
+from django.db.models import Prefetch
 from rest_framework import generics
 from django.utils import timezone
-from .models import Brand, Product, Category
+from .models import Brand, Product, Category, ProductImage, ProductVariant
 from .serializers import (
     ProductSerializer,
     ProductDetailSerializer,
@@ -29,7 +30,8 @@ class ProductListAPIView(generics.ListAPIView):
         return Product.objects.select_related(
             'category', 'brand'
         ).prefetch_related(
-            'images', 'specs__specification', 'category__children'
+            'images', 'specs__specification', 'category__children', 
+            Prefetch('variants', queryset=ProductVariant.objects.order_by('-is_default', 'id'))
         )
 
 class ProductDetailAPIView(generics.RetrieveAPIView):
@@ -40,8 +42,30 @@ class ProductDetailAPIView(generics.RetrieveAPIView):
         return Product.objects.select_related(
             'category', 'brand'
         ).prefetch_related(
-            'images', 'specs__specification', 'category__children'
+            'specs__specification', 'category__children',
+            Prefetch(
+                'images',
+                queryset=(
+                    ProductImage.objects
+                    .filter(variant__isnull=True)
+                    .order_by('-is_primary')
+                ),
+                to_attr='primary_images'
+            ),
+            Prefetch(
+                'variants',
+                queryset=(
+                    ProductVariant.objects
+                    .prefetch_related('specs__specification', 'images')
+                    .order_by('-is_default', 'id')
+                )
+            ),
         )
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['variant_param'] = self.request.query_params.get('variant')
+        return context
 
 class SubcategoryListByCategoryAPIView(generics.ListAPIView):
     serializer_class = CategorySerializer

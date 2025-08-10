@@ -141,3 +141,9 @@ class ProductImage(models.Model):
         
     def __str__(self):
         return f"{self.url}"
+    
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.variant and self.product and self.variant.product_id != self.product_id:
+            raise ValidationError("Image.product must match image.variant.product.")
+

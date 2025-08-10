@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
-    Category, Brand, Product, Specification,
-    ProductSpecification, ProductImage
+    Category, Brand, Product, ProductVariant, Specification,
+    ProductSpecification, ProductImage, VariantSpecification
 )
 from django.utils.html import format_html
 from import_export.admin import ImportExportModelAdmin
@@ -44,8 +44,8 @@ class BrandAdmin(ImportExportModelAdmin):
 @admin.register(Product)
 class ProductAdmin(ImportExportModelAdmin):
     list_display = [
-        'id', 'name', 'brand', 'category', 'price',
-        'is_featured', 'is_weekly_deal', 'condition', 'created_at'
+        'id', 'name', 'brand', 'category', 'is_featured',
+        'is_weekly_deal', 'condition', 'created_at'
     ]
     list_filter = ['category', 'brand', 'is_featured', 'condition']
     search_fields = ['name', 'sku', 'slug']
@@ -79,3 +79,16 @@ class ProductImageAdmin(ImportExportModelAdmin):
             return format_html('<img src="{}" width="60" />', obj.url.url)
         return "-"
     image_tag.short_description = 'Image'
+    
+@admin.register(ProductVariant)
+class ProductVariantAdmin(ImportExportModelAdmin):
+    list_display = ['id', 'product', 'sku', 'price', 'discounted_price', 'stock', 'is_default', 'created_at']
+    search_fields = ['product__name', 'sku']
+    list_filter = ['product', 'is_default']
+    readonly_fields = ['created_at', 'updated_at']
+    
+@admin.register(VariantSpecification)
+class VariantSpecificationAdmin(ImportExportModelAdmin):
+    list_display = ['id', 'variant', 'specification', 'value']
+    search_fields = ['variant__product__name', 'specification__name', 'value']
+    list_filter = ['specification']
