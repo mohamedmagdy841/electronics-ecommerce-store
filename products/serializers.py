@@ -111,7 +111,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             return None
         variants = list(obj.variants.all())
         variant = next((v for v in variants if v.sku == variant_param or str(v.id) == variant_param), None)
-        return ProductDetailVariantSerializer(variant).data if variant else None
+        return ProductDetailVariantSerializer(variant, context=self.context).data if variant else None
     
     def get_rating_distribution(self, obj):
         # Only if you added r1..r5 in the queryset

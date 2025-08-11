@@ -223,9 +223,6 @@ class ProductReviewListAPIView(generics.ListCreateAPIView):
         context = super().get_serializer_context()
         context['product'] = self.product
         return context
-    
-    def perform_create(self, serializer):
-        serializer.save()
 
 class ProductReviewDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = ProductReview.objects.select_related("user", "product")

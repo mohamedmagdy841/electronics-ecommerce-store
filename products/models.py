@@ -183,7 +183,7 @@ class ProductImage(models.Model):
     def clean(self):
         from django.core.exceptions import ValidationError
         if self.variant and self.product and self.variant.product_id != self.product_id:
-            raise ValidationError("Image.product must match image.variant.product.")
+            raise ValidationError({"variant": "Selected variant must belong to the chosen product."})
 
 
 class ProductReview(models.Model):
