@@ -13,6 +13,11 @@ from products.views import (
     SubcategoryListByCategoryAPIView
 )
 
+from cart.views import (
+    WishlistListAPIView,
+    WishlistToggleAPIView
+)
+
 urlpatterns = [
     # Accounts
     path('accounts/', include('accounts.urls')),
@@ -33,5 +38,12 @@ urlpatterns = [
     path("categories/<slug:slug>/subcategories/", SubcategoryListByCategoryAPIView.as_view()),
     
     # Brands
-    path("brands/", BrandListAPIView.as_view())
+    path("brands/", BrandListAPIView.as_view()),
+    
+    # Cart
+    path("cart/", include('cart.urls')),
+    
+    # Wishlist
+    path("wishlist/", WishlistListAPIView.as_view()),
+    path("wishlist/toggle/", WishlistToggleAPIView.as_view()),
 ]
