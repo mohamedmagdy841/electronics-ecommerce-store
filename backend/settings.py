@@ -146,7 +146,22 @@ AUTHENTICATION_BACKENDS = [
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    ),
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'backend.throttling.BurstRateThrottle',
+        'backend.throttling.SustainedRateThrottle',
+        'rest_framework.throttling.ScopedRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '20/minute',
+        'burst': '60/minute',
+        'sustained': '2000/day',
+        'login': '5/minute',
+        'register': '5/minute',
+        'send_otp': '3/minute',
+        'verify_otp': '5/minute',
+    }
 }
 
 SIMPLE_JWT = {

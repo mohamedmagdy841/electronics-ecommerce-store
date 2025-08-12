@@ -15,6 +15,7 @@ COOKIE_NAME = "guest_id"
 COOKIE_SAMESITE = "Lax"
 
 class CustomLoginView(APIView):
+    throttle_scope = 'login'
     def post(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
@@ -41,10 +42,12 @@ class CustomLoginView(APIView):
         return resp
     
 class CustomRegisterView(generics.CreateAPIView):
+    throttle_scope = 'register'
     queryset = User.objects.all()
     serializer_class = CustomUserCreateSerializer
 
 class SendOtpView(APIView):
+    throttle_scope = 'send_otp'
     def post(self, request):
         phone = request.data.get('phone_number')
         if not phone:
@@ -56,6 +59,7 @@ class SendOtpView(APIView):
         return Response({'detail': 'OTP sent successfully'}, status=status.HTTP_200_OK)
     
 class VerifyOtpView(APIView):
+    throttle_scope = 'verify_otp'
     def post(self, request):
         phone = request.data.get('phone_number')
         otp = request.data.get('otp')
