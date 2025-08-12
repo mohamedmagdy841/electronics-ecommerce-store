@@ -228,3 +228,32 @@ class ProductReview(models.Model):
     
     def __str__(self):
         return f"{self.user} - {self.product}"
+
+
+class Tax(models.Model):
+    class TaxType(models.TextChoices):
+        PERCENTAGE = "percentage", "Percentage"
+        FIXED = "fixed", "Fixed"
+    name = models.CharField(max_length=100)
+    type = models.CharField(max_length=20, choices=TaxType.choices)
+    value = models.DecimalField(max_digits=5, decimal_places=2)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "tax"
+        verbose_name_plural = "taxes"
+    
+    def __str__(self):
+        return f"{self.name} ({self.value}{'%' if self.type == 'percentage' else ''})"
+    
+    def clean(self):
+        if self.type == self.TaxType.PERCENTAGE and not (0 <= self.value <= 100):
+            raise ValidationError("Percentage tax must be between 0 and 100.")
+        if self.type == self.TaxType.FIXED and self.value <= 0:
+            raise ValidationError("Fixed tax must be greater than 0.")
+    
+    def save(self, *args, **kwargs):
+        self.name = self.name.strip().title()
+        super().save(*args, **kwargs)
