@@ -5,9 +5,14 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
+
+from cart.utils import merge_guest_cart
 from .serializers import CustomUserCreateSerializer
 from .models import PhoneOtp, User
 from .utils import send_otp_via_sms
+
+COOKIE_NAME = "guest_id" 
+COOKIE_SAMESITE = "Lax"
 
 class CustomLoginView(APIView):
     def post(self, request):
@@ -15,15 +20,25 @@ class CustomLoginView(APIView):
         password = request.data.get('password')
         
         user = authenticate(username=username, password=password)
-        
-        if user is not None:
-            refresh = RefreshToken.for_user(user)
-            return Response({
-                'access': str(refresh.access_token),
-                'refresh': str(refresh),
-            })
-            
-        return Response({'detail': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+        if user is None:
+            return Response({'detail': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # merge guest cart into user cart
+        merge_guest_cart(request, user, cookie_name=COOKIE_NAME)
+
+        refresh = RefreshToken.for_user(user)
+        resp = Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+        }, status=status.HTTP_200_OK)
+
+        # delete the guest cookie
+        resp.delete_cookie(
+            COOKIE_NAME,
+            samesite=COOKIE_SAMESITE,
+            path="/",
+        )
+        return resp
     
 class CustomRegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
