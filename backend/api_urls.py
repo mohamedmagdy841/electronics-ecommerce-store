@@ -46,4 +46,7 @@ urlpatterns = [
     # Wishlist
     path("wishlist/", WishlistListAPIView.as_view()),
     path("wishlist/toggle/", WishlistToggleAPIView.as_view()),
+    
+    # Orders
+    path("orders/", include('orders.urls')),
 ]
