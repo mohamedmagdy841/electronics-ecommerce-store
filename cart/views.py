@@ -12,6 +12,16 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from drf_spectacular.utils import (
+    extend_schema,
+    extend_schema_view,
+    inline_serializer,
+    OpenApiResponse,
+    OpenApiParameter,
+    OpenApiTypes,
+)
+
+
 from cart.utils import get_or_create_cart
 from products.models import ProductVariant
 from .serializers import (
@@ -25,6 +35,14 @@ from .models import CartItem, WishlistItem
 COOKIE_NAME = "guest_id"
 COOKIE_AGE = 60 * 60 * 24 * 30  # 30 days
 
+# -------------------- Wishlist --------------------
+
+@extend_schema(
+    tags=["Wishlist"],
+    summary="List my wishlist",
+    description="Returns the authenticated user's wishlist items.",
+    responses=WishlistItemSerializer,
+)
 class WishlistListAPIView(ListAPIView):
     serializer_class = WishlistItemSerializer
     permission_classes = [IsAuthenticated]
@@ -39,6 +57,24 @@ class WishlistListAPIView(ListAPIView):
             )
         )
 
+@extend_schema(
+    tags=["Wishlist"],
+    summary="Toggle wishlist item",
+    description=(
+        "Add the given variant to the wishlist if it is not present; "
+        "otherwise remove it. Returns 201 with the item when added, or 204 when removed."
+    ),
+    request=inline_serializer(
+        name="WishlistToggleRequest",
+        fields={"variant": WishlistCreateSerializer().fields["variant"]}
+    ),
+    responses={
+        201: WishlistItemSerializer,
+        204: OpenApiResponse(description="Removed from wishlist."),
+        400: OpenApiResponse(description="Missing or invalid 'variant'."),
+        404: OpenApiResponse(description="Variant not found."),
+    },
+)
 class WishlistToggleAPIView(APIView):
     serializer_class = WishlistCreateSerializer
     permission_classes = [IsAuthenticated]
@@ -58,6 +94,17 @@ class WishlistToggleAPIView(APIView):
         new_item = WishlistItem.objects.create(user=request.user, variant=variant)
         return Response(WishlistItemSerializer(new_item).data, status=status.HTTP_201_CREATED)
 
+# -------------------- Cart --------------------
+
+@extend_schema(
+    tags=["Cart"],
+    summary="Get current cart",
+    description=(
+        "Fetch the current cart. Creates a guest cart and sets a cookie if none exists."
+    ),
+    auth=[],
+    responses=CartSerializer,
+)
 class CartDetailAPIView(RetrieveAPIView):
     permission_classes = [AllowAny]    
     serializer_class = CartSerializer
@@ -68,7 +115,15 @@ class CartDetailAPIView(RetrieveAPIView):
         if new_guest_id:
             response.set_cookie(COOKIE_NAME, new_guest_id, max_age=COOKIE_AGE, httponly=True, samesite="Lax") # add secure=True in prod
         return response
-    
+
+@extend_schema(
+    tags=["Cart"],
+    summary="Add item to cart",
+    description="Create or update a cart line item for the current (guest or authenticated) cart.",
+    auth=[],
+    request=CartItemCreateSerializer,
+    responses={201: CartSerializer, 400: OpenApiResponse(description="Validation error")},
+)    
 class CartAddItemAPIView(GenericAPIView):
     permission_classes = [AllowAny]
     serializer_class = CartItemCreateSerializer
@@ -86,6 +141,16 @@ class CartAddItemAPIView(GenericAPIView):
                             httponly=True, samesite="Lax")  # add secure=True in prod
         return resp
 
+@extend_schema(
+    tags=["Cart"],
+    summary="Increment cart item quantity",
+    description="Increase the quantity by 1 (capped at available stock).",
+    auth=[],
+    parameters=[
+        OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH, description="Cart item ID"),
+    ],
+    responses={200: CartSerializer, 400: OpenApiResponse(description="Out of stock or invalid item"), 404: OpenApiResponse(description="Item not found")},
+)
 class CartIncrementItemAPIView(GenericAPIView):
     permission_classes = [AllowAny]
     
@@ -107,6 +172,16 @@ class CartIncrementItemAPIView(GenericAPIView):
             
         return Response(CartSerializer(cart).data, status=status.HTTP_200_OK)
 
+@extend_schema(
+    tags=["Cart"],
+    summary="Decrement cart item quantity",
+    description="Decrease the quantity by 1. If it reaches 0, the item is removed.",
+    auth=[],
+    parameters=[
+        OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH, description="Cart item ID"),
+    ],
+    responses={200: CartSerializer, 404: OpenApiResponse(description="Item not found")},
+)
 class CartDecrementItemAPIView(GenericAPIView):
     permission_classes = [AllowAny]
     
@@ -122,6 +197,16 @@ class CartDecrementItemAPIView(GenericAPIView):
                 
         return Response(CartSerializer(cart).data, status=status.HTTP_200_OK)
 
+@extend_schema(
+    tags=["Cart"],
+    summary="Remove cart item",
+    description="Delete a line item from the cart.",
+    auth=[],
+    parameters=[
+        OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH, description="Cart item ID"),
+    ],
+    responses={204: OpenApiResponse(description="Deleted"), 404: OpenApiResponse(description="Item not found")},
+)
 class CartRemoveItemAPIView(DestroyAPIView):
     permission_classes = [AllowAny]
     lookup_url_kwarg = "pk"

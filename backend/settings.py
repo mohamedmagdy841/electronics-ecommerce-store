@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'import_export',
     "debug_toolbar",
     'django_filters',
+    'drf_spectacular',
     
     'accounts',
     'products',
@@ -162,7 +163,25 @@ REST_FRAMEWORK = {
         'register': '5/minute',
         'send_otp': '3/minute',
         'verify_otp': '5/minute',
-    }
+    },
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'ElectroShop API',
+    'DESCRIPTION': 'API for the ElectroShop project',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SECURITY': [{'BearerAuth': []}], 
+    'SWAGGER_UI_SETTINGS': {'persistAuthorization': True},
+    'TAGS': [
+        {'name': 'Accounts', 'description': 'Auth, registration, OTP'},
+        {'name': 'Products', 'description': 'Product catalog & variants'},
+        {'name': 'Cart', 'description': 'Cart operations for guests & users'},
+        {'name': 'Orders', 'description': 'Checkout & order management'},
+        {'name': 'Wishlist', 'description': 'User wishlist'},
+    ],
 }
 
 SIMPLE_JWT = {

@@ -21,6 +21,29 @@ from rest_framework import filters
 from rest_framework.exceptions import NotFound
 from django.utils.functional import cached_property
 
+
+from drf_spectacular.utils import (
+    extend_schema,
+    extend_schema_view,
+    OpenApiParameter,
+    OpenApiTypes,
+)
+
+# -------------------- Products --------------------
+
+@extend_schema(
+    tags=["Products"],
+    summary="List products",
+    description=(
+        "List products with filtering, search and ordering.\n\n"
+        "**Search fields:** name, description, brand__name, category__name, sku\n"
+        "**Ordering fields:** price, created_at"
+    ),
+    parameters=[
+        OpenApiParameter(name="search", type=OpenApiTypes.STR, location=OpenApiParameter.QUERY, required=False),
+        OpenApiParameter(name="ordering", type=OpenApiTypes.STR, location=OpenApiParameter.QUERY, required=False),
+    ],
+)
 class ProductListAPIView(generics.ListAPIView):
     serializer_class = ProductSerializer
     pagination_class = CustomProductPagination
@@ -41,6 +64,15 @@ class ProductListAPIView(generics.ListAPIView):
             Prefetch('variants', queryset=ProductVariant.objects.order_by('-is_default', 'id'))
         )
 
+@extend_schema(
+    tags=["Products"],
+    summary="Retrieve product detail",
+    parameters=[
+        OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH, description="Product slug"),
+        OpenApiParameter("variant", OpenApiTypes.INT, OpenApiParameter.QUERY, required=False,
+                         description="Optional variant ID to tailor the response"),
+    ],
+)
 class ProductDetailAPIView(generics.RetrieveAPIView):
     serializer_class = ProductDetailSerializer
     lookup_field = 'slug'
@@ -83,13 +115,13 @@ class ProductDetailAPIView(generics.RetrieveAPIView):
         context['variant_param'] = self.request.query_params.get('variant')
         return context
 
-class SubcategoryListByCategoryAPIView(generics.ListAPIView):
-    serializer_class = CategorySerializer
-    
-    def get_queryset(self):
-        parent_slug = self.kwargs['slug']
-        return Category.objects.filter(parent__slug=parent_slug)
-    
+@extend_schema(
+    tags=["Products"],
+    summary="List related products",
+    parameters=[
+        OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH, description="Slug of the reference product"),
+    ],
+)  
 class RelatedProductListAPIView(generics.ListAPIView):
     serializer_class = ProductSerializer
     pagination_class = RelatedLimitOffset
@@ -125,7 +157,13 @@ class RelatedProductListAPIView(generics.ListAPIView):
                 )
          
 
-# Home Page Views
+# -------------------- Home Page Views --------------------
+
+@extend_schema(
+    tags=["Home"],
+    summary="Latest products",
+    description="Returns the most recently created products (cached).",
+)
 class LatestProductListAPIView(generics.ListAPIView):
     serializer_class = ProductSerializer
     
@@ -137,7 +175,12 @@ class LatestProductListAPIView(generics.ListAPIView):
             cache.set("latest_products", products, timeout=60*60)
             
         return products
-    
+
+@extend_schema(
+    tags=["Home"],
+    summary="Weekly deal product",
+    description="Returns the active weekly-deal product (cached).",
+)  
 class WeeklyDealProductAPIView(generics.RetrieveAPIView):
     serializer_class = ProductSerializer
     
@@ -162,7 +205,14 @@ class WeeklyDealProductAPIView(generics.RetrieveAPIView):
         return product 
         
     ## Most Popular Products
-    
+
+# -------------------- Categories & Brands --------------------   
+
+@extend_schema(
+    tags=["Categories"],
+    summary="List top-level categories",
+    description="Returns root categories with their children (cached).",
+)
 class CategoryListAPIView(generics.ListAPIView):
     serializer_class = CategorySerializer
     
@@ -174,7 +224,26 @@ class CategoryListAPIView(generics.ListAPIView):
             cache.set("category_list", categories, timeout=60*60)
 
         return categories
+
+@extend_schema(
+    tags=["Categories"],
+    summary="List subcategories by parent",
+    parameters=[
+        OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH, description="Parent category slug"),
+    ],
+)   
+class SubcategoryListByCategoryAPIView(generics.ListAPIView):
+    serializer_class = CategorySerializer
     
+    def get_queryset(self):
+        parent_slug = self.kwargs['slug']
+        return Category.objects.filter(parent__slug=parent_slug)   
+
+@extend_schema(
+    tags=["Categories"],
+    summary="List subcategories",
+    description="Returns subcategories (non-root) (cached).",
+)
 class SubCategoryListAPIView(generics.ListAPIView):
     serializer_class = CategorySerializer
     
@@ -186,12 +255,30 @@ class SubCategoryListAPIView(generics.ListAPIView):
             cache.set("subcategory_list", categories, timeout=60*60)
             
         return categories 
-
+    
+@extend_schema(
+    tags=["Brands"],
+    summary="List brands",
+)
 class BrandListAPIView(generics.ListAPIView):
     queryset = Brand.objects.all()
     serializer_class = BrandSerializer
 
-# Product Review 
+# -------------------- Reviews --------------------
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Reviews"],
+        summary="List product reviews",
+        parameters=[OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH, description="Product slug")],
+        description="Cursor-paginated top-level reviews. Replies are nested under each review.",
+    ),
+    post=extend_schema(
+        tags=["Reviews"],
+        summary="Create a product review",
+        description="Authenticated users can create a top-level review for the given product.",
+    ),
+)
 class ProductReviewListAPIView(generics.ListCreateAPIView):
     serializer_class = ProductReviewSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
@@ -223,7 +310,11 @@ class ProductReviewListAPIView(generics.ListCreateAPIView):
         context = super().get_serializer_context()
         context['product'] = self.product
         return context
-
+    
+@extend_schema(
+    tags=["Reviews"],
+    summary="Retrieve/Update/Delete a review",
+)
 class ProductReviewDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = ProductReview.objects.select_related("user", "product")
     serializer_class = ProductReviewSerializer

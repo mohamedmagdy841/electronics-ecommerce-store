@@ -1,5 +1,11 @@
 from django.urls import path, include
 
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularSwaggerView,
+    SpectacularRedocView,
+)
+
 from accounts.views import (
     CustomLoginView,
     CustomRegisterView,
@@ -19,6 +25,11 @@ from cart.views import (
 )
 
 urlpatterns = [
+    # Swagger
+    path('schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    
     # Accounts
     path('accounts/', include('accounts.urls')),
     path('auth/users/login/', CustomLoginView.as_view(), name='custom-login'),
