@@ -153,6 +153,7 @@ class CartAddItemAPIView(GenericAPIView):
 )
 class CartIncrementItemAPIView(GenericAPIView):
     permission_classes = [AllowAny]
+    serializer_class = CartSerializer
     
     def post(self, request, pk):
         cart, _ = get_or_create_cart(request, cookie_name=COOKIE_NAME)
@@ -184,6 +185,7 @@ class CartIncrementItemAPIView(GenericAPIView):
 )
 class CartDecrementItemAPIView(GenericAPIView):
     permission_classes = [AllowAny]
+    serializer_class = CartSerializer
     
     def post(self, request, pk):
         cart, _ = get_or_create_cart(request, cookie_name=COOKIE_NAME)

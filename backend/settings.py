@@ -181,6 +181,10 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Cart', 'description': 'Cart operations for guests & users'},
         {'name': 'Orders', 'description': 'Checkout & order management'},
         {'name': 'Wishlist', 'description': 'User wishlist'},
+        {'name': 'Categories', 'description': 'Browse categories & subcategories'},
+        {'name': 'Brands', 'description': 'Brand directory'},
+        {'name': 'Home', 'description': 'Homepage widgets (latest, weekly deal)'},
+        {'name': 'Reviews', 'description': 'Product review threads'},
     ],
 }
 

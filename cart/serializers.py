@@ -4,6 +4,7 @@ from rest_framework import serializers
 from products.models import ProductVariant
 from .models import Cart, CartItem, WishlistItem
 from products.serializers import ProductImageSerializer
+from drf_spectacular.utils import extend_schema_field, inline_serializer, OpenApiTypes
 
 # Wishlist
 class WishlistVariantSerializer(serializers.ModelSerializer):
@@ -45,6 +46,7 @@ class CartItemSerializer(serializers.ModelSerializer):
         model = CartItem
         fields = ["id", "variant", "quantity", "line_total", "created_at", "updated_at"]
     
+    @extend_schema_field(str)
     def get_line_total(self, obj):
         unit = obj.variant.discounted_price or obj.variant.price or Decimal("0")
         return str(unit * obj.quantity)
@@ -58,9 +60,11 @@ class CartSerializer(serializers.ModelSerializer):
         model = Cart
         fields = ['id', 'items', 'items_count', 'subtotal']
         
+    @extend_schema_field(int)
     def get_items_count(self, obj):
         return sum(item.quantity for item in obj.cart_items.all())
     
+    @extend_schema_field(str)
     def get_subtotal(self, obj):
         total = Decimal("0")
         for item in obj.cart_items.select_related("variant"):
