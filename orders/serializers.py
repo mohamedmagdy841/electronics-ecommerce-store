@@ -1,5 +1,7 @@
 from rest_framework import serializers
-from .models import ShippingAddress, Coupon
+from cart.models import CartItem
+from .services.order_service import create_order
+from .models import ShippingAddress, Coupon, Order, OrderItem, Payment
 
 class ShippingAddressSerializer(serializers.ModelSerializer):
     country_name = serializers.CharField(source='country.name', read_only=True)
@@ -49,4 +51,71 @@ class CouponSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"value": "Percent value cannot exceed 100."}
             )
-        return attrs    
+        return attrs
+    
+    
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='variant.product.name', read_only=True)
+    sku = serializers.CharField(source='variant.sku', read_only=True)
+    total_price = serializers.DecimalField(
+        max_digits=10, decimal_places=2, read_only=True
+    )
+
+    class Meta:
+        model = OrderItem
+        fields = ['id', 'variant', 'product_name', 'sku', 'quantity', 'unit_price', 'total_price']
+        read_only_fields = ['unit_price', 'total_price', 'product_name', 'sku']
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+    is_paid = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = Payment
+        fields = ['id', 'method', 'amount', 'status', 'transaction_id', 'is_paid', 'created_at']
+        read_only_fields = ['status', 'transaction_id', 'is_paid', 'created_at']
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(many=True, read_only=True)
+    payment = PaymentSerializer(read_only=True)
+    subtotal = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    grand_total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+
+    class Meta:
+        model = Order
+        fields = [
+            'id', 'user', 'shipping_address', 'status',
+            'subtotal', 'discount_amount', 'total_tax', 'grand_total',
+            'total_price', 'coupon_code', 'created_at',
+            'items', 'payment'
+        ]
+        read_only_fields = ['status', 'subtotal', 'grand_total', 'total_price', 'created_at']
+
+class CreateOrderSerializer(serializers.ModelSerializer):
+    shipping_address = serializers.PrimaryKeyRelatedField(queryset=ShippingAddress.objects.all())
+    coupon_code = serializers.CharField(required=False, allow_blank=True)
+
+    class Meta:
+        model = Order
+        fields = ['shipping_address', 'coupon_code']
+
+    def validate(self, attrs):
+        user = self.context['request'].user
+
+        cart_items = CartItem.objects.filter(user=user)
+        if not cart_items.exists():
+            raise serializers.ValidationError("Your cart is empty.")
+
+        return attrs
+
+    def create(self, validated_data):
+        return create_order(
+            user=self.context['request'].user,
+            shipping_address=validated_data['shipping_address'],
+            coupon_code=validated_data.get('coupon_code')
+        )
+    
+    def to_representation(self, instance):
+        return OrderSerializer(instance, context=self.context).data

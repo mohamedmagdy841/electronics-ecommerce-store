@@ -1,4 +1,3 @@
-from ast import mod
 from django.conf import settings
 from django.core.serializers.json import uuid
 from django.db import models

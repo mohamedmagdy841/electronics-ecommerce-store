@@ -1,10 +1,12 @@
 from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.db.models.expressions import Decimal
 from django_countries.fields import CountryField
 from django.core.validators import MinValueValidator
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from products.models import ProductVariant
 
 class ShippingAddress(models.Model):
     user = models.ForeignKey(
@@ -106,3 +108,124 @@ class Coupon(models.Model):
         if self.valid_to and now > self.valid_to:
             return False
         return True
+    
+    @classmethod
+    def validate_and_get_discount(self, code: str, user, subtotal: Decimal) -> Decimal:
+        try:
+            coupon = self.objects.get(code=code)
+        except self.DoesNotExist:
+            raise ValidationError("Invalid coupon code.")
+
+        if not coupon.is_active:
+            raise ValidationError("Coupon is not active.")
+
+        if not coupon.is_in_time_window():
+            raise ValidationError("Coupon is not valid at this time.")
+
+        if coupon.min_order_amount and subtotal < coupon.min_order_amount:
+            raise ValidationError(f"Order must be at least {coupon.min_order_amount} to use this coupon.")
+
+        if coupon.first_order_only and user.orders.exists():
+            raise ValidationError("Coupon is valid only for your first order.")
+
+        # TODO: If you track usage per user or global uses, check it here
+
+        return coupon.calculate_discount(subtotal)
+
+
+class Order(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('paid', 'Paid'),
+        ('shipped', 'Shipped'),
+        ('delivered', 'Delivered'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='orders'
+    )
+    shipping_address = models.ForeignKey(
+        ShippingAddress,
+        on_delete=models.PROTECT,  # Keep address for record
+        related_name='orders'
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending'
+    )
+    total_price = models.DecimalField(max_digits=10, decimal_places=2)
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total_tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    coupon_code = models.CharField(max_length=50, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Order #{self.id} - {self.user}"
+    
+    @property
+    def subtotal(self):
+        return sum(item.unit_price * item.quantity for item in self.items.all())
+
+    @property
+    def grand_total(self):
+        return self.subtotal - self.discount_amount + self.total_tax
+
+
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name='items'
+    )
+    variant = models.ForeignKey(
+        ProductVariant,
+        on_delete=models.PROTECT
+    )
+    quantity = models.PositiveIntegerField()
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.quantity} x {self.variant.product.name}"
+    
+    @property
+    def total_price(self):
+        return self.unit_price * self.quantity
+
+
+class Payment(models.Model):
+    METHOD_CHOICES = [
+        ('card', 'Credit/Debit Card'),
+        ('cod', 'Cash on Delivery'),
+    ]
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('success', 'Success'),
+        ('failed', 'Failed'),
+    ]
+
+    order = models.OneToOneField(
+        Order,
+        on_delete=models.CASCADE,
+        related_name='payment'
+    )
+    method = models.CharField(max_length=20, choices=METHOD_CHOICES)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending'
+    )
+    transaction_id = models.CharField(max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Payment for Order #{self.order.id}"
+    
+    @property
+    def is_paid(self):
+        return self.status == 'success'
