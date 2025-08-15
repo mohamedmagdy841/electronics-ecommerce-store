@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import ShippingAddress
+from .models import ShippingAddress, Coupon
 
 class ShippingAddressSerializer(serializers.ModelSerializer):
     country_name = serializers.CharField(source='country.name', read_only=True)
@@ -34,3 +34,19 @@ class ShippingAddressSerializer(serializers.ModelSerializer):
              .update(is_default=False))
             
         return super().update(instance, validated_data)
+
+class CouponSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Coupon
+        fields = "__all__"
+
+    def validate(self, attrs):
+        if (
+            attrs.get("discount_type") == Coupon.DiscountType.PERCENT
+            and attrs.get("value") is not None
+            and attrs["value"] > 100
+        ):
+            raise serializers.ValidationError(
+                {"value": "Percent value cannot exceed 100."}
+            )
+        return attrs    

@@ -1,10 +1,11 @@
 from django.db import transaction
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
-from .models import ShippingAddress
-from .serializers import ShippingAddressSerializer
+from .models import ShippingAddress, Coupon
+from .serializers import ShippingAddressSerializer, CouponSerializer
 
+# -------- Shipping Addresses --------
 class ShippingAddressListCreate(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ShippingAddressSerializer
@@ -34,3 +35,20 @@ class ShippingAddressDetail(RetrieveUpdateDestroyAPIView):
                 if candidate and not candidate.is_default:
                     candidate.is_default = True
                     candidate.save(update_fields=['is_default'])
+
+# -------- Coupons --------
+class CouponListCreateView(ListCreateAPIView):
+    queryset = Coupon.objects.all()
+    serializer_class = CouponSerializer
+    permission_classes = [IsAdminUser]
+
+class CouponDetailView(RetrieveUpdateDestroyAPIView):
+    queryset = Coupon.objects.all()
+    serializer_class = CouponSerializer
+    permission_classes = [IsAdminUser]
+
+class PublicCouponListView(ListAPIView):
+    serializer_class = CouponSerializer
+
+    def get_queryset(self):
+        return Coupon.objects.filter(is_active=True, is_public=True)
