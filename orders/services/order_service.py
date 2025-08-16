@@ -3,9 +3,10 @@ from decimal import Decimal
 from cart.models import CartItem
 from products.models import Tax
 from ..models import Coupon, Order, OrderItem, Payment
+import uuid
 
 def create_order(user, shipping_address, coupon_code=None, payment_method='cod'):
-    cart_items = CartItem.objects.filter(user=user)
+    cart_items = CartItem.objects.filter(cart__user=user)
     if not cart_items.exists():
         raise ValueError("Cart is empty")
 
@@ -19,7 +20,7 @@ def create_order(user, shipping_address, coupon_code=None, payment_method='cod')
         discount_amount = Coupon.validate_and_get_discount(coupon_code, user, subtotal)
 
     total_tax = sum(
-        tax.calculate_tax(subtotal - discount_amount)
+        tax.calculate_tax(subtotal)
         for tax in Tax.objects.filter(is_active=True)
     )
 
@@ -48,6 +49,7 @@ def create_order(user, shipping_address, coupon_code=None, payment_method='cod')
         Payment.objects.create(
             order=order,
             method=payment_method,
+            transaction_id=str(uuid.uuid4()),
             amount=total_price,
             status='pending'
         )

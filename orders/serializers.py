@@ -2,6 +2,7 @@ from rest_framework import serializers
 from cart.models import CartItem
 from .services.order_service import create_order
 from .models import ShippingAddress, Coupon, Order, OrderItem, Payment
+from accounts.serializers import CustomUserSerializer
 
 class ShippingAddressSerializer(serializers.ModelSerializer):
     country_name = serializers.CharField(source='country.name', read_only=True)
@@ -12,9 +13,9 @@ class ShippingAddressSerializer(serializers.ModelSerializer):
             "id", "full_name", "phone_number",
             "address_line_1", "address_line_2",
             "city", "state", "postal_code", "country", "country_name",
-            "instructions", "is_default", "created_at", "updated_at"
+            "instructions", "is_default"
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id"]
         
     def create(self, validated_data):
         user = self.context["request"].user
@@ -70,16 +71,22 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 class PaymentSerializer(serializers.ModelSerializer):
     is_paid = serializers.BooleanField(read_only=True)
-
+    method = serializers.SerializerMethodField()
+    
     class Meta:
         model = Payment
         fields = ['id', 'method', 'amount', 'status', 'transaction_id', 'is_paid', 'created_at']
         read_only_fields = ['status', 'transaction_id', 'is_paid', 'created_at']
+        
+    def get_method(self, obj):
+        return obj.get_method_display().upper()
 
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     payment = PaymentSerializer(read_only=True)
+    shipping_address = ShippingAddressSerializer(read_only=True)
+    user = CustomUserSerializer(read_only=True)
     subtotal = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     grand_total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
 
@@ -96,15 +103,16 @@ class OrderSerializer(serializers.ModelSerializer):
 class CreateOrderSerializer(serializers.ModelSerializer):
     shipping_address = serializers.PrimaryKeyRelatedField(queryset=ShippingAddress.objects.all())
     coupon_code = serializers.CharField(required=False, allow_blank=True)
+    payment_method = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = Order
-        fields = ['shipping_address', 'coupon_code']
+        fields = ['shipping_address', 'coupon_code', 'payment_method']
 
     def validate(self, attrs):
         user = self.context['request'].user
 
-        cart_items = CartItem.objects.filter(user=user)
+        cart_items = CartItem.objects.filter(cart__user=user)
         if not cart_items.exists():
             raise serializers.ValidationError("Your cart is empty.")
 
@@ -114,7 +122,8 @@ class CreateOrderSerializer(serializers.ModelSerializer):
         return create_order(
             user=self.context['request'].user,
             shipping_address=validated_data['shipping_address'],
-            coupon_code=validated_data.get('coupon_code')
+            coupon_code=validated_data.get('coupon_code'),
+            payment_method=validated_data.get('payment_method')
         )
     
     def to_representation(self, instance):

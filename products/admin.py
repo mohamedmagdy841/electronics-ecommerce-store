@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     Category, Brand, Product, ProductVariant, Specification,
-    ProductSpecification, ProductImage, VariantSpecification
+    ProductSpecification, ProductImage, Tax, VariantSpecification
 )
 from django.utils.html import format_html
 from import_export.admin import ImportExportModelAdmin
@@ -115,3 +115,13 @@ class VariantSpecificationAdmin(ImportExportModelAdmin):
     list_display = ['id', 'variant', 'specification', 'value']
     search_fields = ['variant__product__name', 'specification__name', 'value']
     list_filter = ['specification']
+
+
+# ---- Tax ----
+@admin.register(Tax)
+class TaxAdmin(ImportExportModelAdmin):
+    list_display = ['id', 'name', 'value', 'type', 'is_active', 'created_at']
+    search_fields = ['name']
+    list_filter = ['type', 'is_active']
+    readonly_fields = ['created_at', 'updated_at']
+

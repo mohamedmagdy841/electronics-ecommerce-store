@@ -1,9 +1,9 @@
 from django.db import transaction
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
+from rest_framework.generics import CreateAPIView, ListCreateAPIView, RetrieveAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
-from .models import ShippingAddress, Coupon
-from .serializers import ShippingAddressSerializer, CouponSerializer
+from .models import Order, OrderItem, Payment, ShippingAddress, Coupon
+from .serializers import CreateOrderSerializer, OrderItemSerializer, OrderSerializer, PaymentSerializer, ShippingAddressSerializer, CouponSerializer
 
 # -------- Shipping Addresses --------
 class ShippingAddressListCreate(ListCreateAPIView):
@@ -52,3 +52,46 @@ class PublicCouponListView(ListAPIView):
 
     def get_queryset(self):
         return Coupon.objects.filter(is_active=True, is_public=True)
+
+# -------- Orders --------
+class OrderListView(ListAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return (Order.objects
+                .filter(user=self.request.user)
+                .select_related('shipping_address', 'payment', 'user')
+                .prefetch_related('items', 'items__variant', 'items__variant__product'))
+    
+class OrderCreateView(CreateAPIView):
+    serializer_class = CreateOrderSerializer
+    permission_classes = [IsAuthenticated]
+    
+class OrderDetailView(RetrieveAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return (Order.objects
+                .filter(user=self.request.user)
+                .select_related('shipping_address', 'payment', 'user')
+                .prefetch_related('items', 'items__variant', 'items__variant__product'))
+
+class OrderItemListView(ListAPIView):
+    serializer_class = OrderItemSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        order_id = self.kwargs['order_id']
+        return (OrderItem.objects
+                .filter(order__id=order_id, order__user=self.request.user)
+                .select_related('variant', 'variant__product'))
+    
+class PaymentDetailView(RetrieveAPIView):
+    serializer_class = PaymentSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return Payment.objects.filter(order__user=self.request.user)
+                        

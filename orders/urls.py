@@ -6,6 +6,11 @@ from .views import (
     CouponListCreateView,
     CouponDetailView,
     PublicCouponListView,
+    OrderListView,
+    OrderCreateView,
+    OrderDetailView,
+    OrderItemListView,
+    PaymentDetailView,
 )
 
 urlpatterns = [
@@ -16,4 +21,11 @@ urlpatterns = [
     path("coupons/", CouponListCreateView.as_view()),
     path("coupons/<int:pk>/", CouponDetailView.as_view()),
     path("public/coupons/", PublicCouponListView.as_view()),
+    
+    # Orders
+    path('', OrderListView.as_view()),
+    path('checkout/', OrderCreateView.as_view()),
+    path('<int:pk>/', OrderDetailView.as_view()),
+    path('<int:order_id>/items/', OrderItemListView.as_view()),
+    path('<int:pk>/payment/', PaymentDetailView.as_view()),
 ]

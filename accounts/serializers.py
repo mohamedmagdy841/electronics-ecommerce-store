@@ -14,6 +14,8 @@ class CustomUserCreateSerializer(BaseUserCreateSerializer):
     
 
 class CustomUserSerializer(BaseUserSerializer):
+    role = serializers.SerializerMethodField()
+    
     class Meta(BaseUserSerializer.Meta):
         model = User
         fields = [

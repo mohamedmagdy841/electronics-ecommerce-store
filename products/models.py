@@ -253,6 +253,15 @@ class Tax(models.Model):
             raise ValidationError("Percentage tax must be between 0 and 100.")
         if self.type == self.TaxType.FIXED and self.value <= 0:
             raise ValidationError("Fixed tax must be greater than 0.")
+        
+    
+    def calculate_tax(self, value):
+        tax_amount = Decimal('0')
+        if self.type == self.TaxType.PERCENTAGE:
+            tax_amount += (value * self.value / 100)
+        elif self.type == self.TaxType.FIXED:
+            tax_amount += self.value
+        return tax_amount
     
     def save(self, *args, **kwargs):
         self.name = self.name.strip().title()

@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from django.core.exceptions import ValidationError
+from rest_framework import serializers
 from django.db.models.expressions import Decimal
 from django_countries.fields import CountryField
 from django.core.validators import MinValueValidator
@@ -99,7 +99,7 @@ class Coupon(models.Model):
     
     def clean(self):
         if self.discount_type == self.DiscountType.PERCENT and (self.value is not None) and self.value > 100:
-            raise ValidationError({"value": _("Percent value cannot exceed 100.")})
+            raise serializers.ValidationError({"value": _("Percent value cannot exceed 100.")})
         
     def is_in_time_window(self) -> bool:
         now = timezone.now()
@@ -109,24 +109,31 @@ class Coupon(models.Model):
             return False
         return True
     
+    def calculate_discount(self, subtotal: Decimal) -> Decimal:
+        if self.discount_type == self.DiscountType.PERCENT:
+            return subtotal * self.value / 100
+        elif self.discount_type == self.DiscountType.FIXED:
+            return self.value
+        return Decimal('0')
+    
     @classmethod
     def validate_and_get_discount(cls, code: str, user, subtotal: Decimal) -> Decimal:
         try:
             coupon = cls.objects.get(code=code)
         except cls.DoesNotExist:
-            raise ValidationError("Invalid coupon code.")
+            raise serializers.ValidationError("Invalid coupon code.")
 
         if not coupon.is_active:
-            raise ValidationError("Coupon is not active.")
+            raise serializers.ValidationError("Coupon is not active.")
 
         if not coupon.is_in_time_window():
-            raise ValidationError("Coupon is not valid at this time.")
+            raise serializers.ValidationError("Coupon is not valid at this time.")
 
         if coupon.min_order_amount and subtotal < coupon.min_order_amount:
-            raise ValidationError(f"Order must be at least {coupon.min_order_amount} to use this coupon.")
+            raise serializers.ValidationError(f"Order must be at least {coupon.min_order_amount} to use this coupon.")
 
         if coupon.first_order_only and user.orders.exists():
-            raise ValidationError("Coupon is valid only for your first order.")
+            raise serializers.ValidationError("Coupon is valid only for your first order.")
 
         # TODO: If you track usage per user or global uses, check it here
 
@@ -149,7 +156,7 @@ class Order(models.Model):
     )
     shipping_address = models.ForeignKey(
         ShippingAddress,
-        on_delete=models.PROTECT,  # Keep address for record
+        on_delete=models.PROTECT,
         related_name='orders'
     )
     status = models.CharField(
