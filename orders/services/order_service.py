@@ -51,6 +51,13 @@ def create_order(user, shipping_address, coupon_code=None, payment_method='cod')
             amount=total_price,
             status='pending'
         )
+        
+        if payment_method == 'cod':
+            for item in cart_items:
+                if item.variant.stock < item.quantity:
+                    raise ValueError(f"Not enough stock for {item.variant.sku}")
+                item.variant.stock -= item.quantity
+                item.variant.save(update_fields=['stock'])
 
         cart_items.delete()
 

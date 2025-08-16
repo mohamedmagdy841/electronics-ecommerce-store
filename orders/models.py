@@ -110,10 +110,10 @@ class Coupon(models.Model):
         return True
     
     @classmethod
-    def validate_and_get_discount(self, code: str, user, subtotal: Decimal) -> Decimal:
+    def validate_and_get_discount(cls, code: str, user, subtotal: Decimal) -> Decimal:
         try:
-            coupon = self.objects.get(code=code)
-        except self.DoesNotExist:
+            coupon = cls.objects.get(code=code)
+        except cls.DoesNotExist:
             raise ValidationError("Invalid coupon code.")
 
         if not coupon.is_active:
