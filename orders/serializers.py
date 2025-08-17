@@ -119,12 +119,19 @@ class CreateOrderSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        return create_order(
+        order, payment_data = create_order(
             user=self.context['request'].user,
             shipping_address=validated_data['shipping_address'],
             coupon_code=validated_data.get('coupon_code'),
             payment_method=validated_data.get('payment_method')
         )
+
+        self.context['payment_data'] = payment_data
+        return order
     
     def to_representation(self, instance):
-        return OrderSerializer(instance, context=self.context).data
+        order_data = OrderSerializer(instance, context=self.context).data
+        payment_data = self.context.get('payment_data')
+        if payment_data:
+            order_data['payment_action'] = payment_data
+        return order_data

@@ -1,9 +1,12 @@
 from django.db import transaction
 from rest_framework.generics import CreateAPIView, ListCreateAPIView, RetrieveAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
 from .models import Order, OrderItem, Payment, ShippingAddress, Coupon
 from .serializers import CreateOrderSerializer, OrderItemSerializer, OrderSerializer, PaymentSerializer, ShippingAddressSerializer, CouponSerializer
+from .services.payments.resolver import PaymentGatewayResolver
 
 # -------- Shipping Addresses --------
 class ShippingAddressListCreate(ListCreateAPIView):
@@ -68,6 +71,7 @@ class OrderCreateView(CreateAPIView):
     serializer_class = CreateOrderSerializer
     permission_classes = [IsAuthenticated]
     
+    
 class OrderDetailView(RetrieveAPIView):
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
@@ -95,3 +99,15 @@ class PaymentDetailView(RetrieveAPIView):
     def get_queryset(self):
         return Payment.objects.filter(order__user=self.request.user)
                         
+class PaymentCallbackView(APIView):
+    permission_classes = [AllowAny]
+    
+    def post(self, request, gateway_type):
+        gateway = PaymentGatewayResolver.resolve(gateway_type)
+        result = gateway.callback(request)
+
+        transaction_id = result.get("transaction_id")
+        status = result.get("status")
+
+        Payment.objects.filter(transaction_id=transaction_id).update(status=status)
+        return Response(result)

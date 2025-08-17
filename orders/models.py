@@ -209,6 +209,10 @@ class Payment(models.Model):
         ('card', 'Credit/Debit Card'),
         ('cod', 'Cash on Delivery'),
     ]
+    PROVIDER_CHOICES = [
+        ('stripe', 'Stripe'),
+        ('paypal', 'PayPal'),
+    ]
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('success', 'Success'),
@@ -221,6 +225,7 @@ class Payment(models.Model):
         related_name='payment'
     )
     method = models.CharField(max_length=20, choices=METHOD_CHOICES)
+    provider = models.CharField(max_length=20, choices=PROVIDER_CHOICES, blank=True, null=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(
         max_length=20,

@@ -5,6 +5,8 @@ from products.models import Tax
 from ..models import Coupon, Order, OrderItem, Payment
 import uuid
 
+from .payments.resolver import PaymentGatewayResolver
+
 def create_order(user, shipping_address, coupon_code=None, payment_method='cod'):
     cart_items = CartItem.objects.filter(cart__user=user)
     if not cart_items.exists():
@@ -46,12 +48,16 @@ def create_order(user, shipping_address, coupon_code=None, payment_method='cod')
             for item in cart_items
         ])
 
+        gateway = PaymentGatewayResolver.resolve(payment_method)
+        payment_data = gateway.send_payment(request=None, user=user, amount=total_price, order=order)
+        
         Payment.objects.create(
             order=order,
-            method=payment_method,
-            transaction_id=str(uuid.uuid4()),
+            method=gateway.method,
+            provider=gateway.provider_name,
+            transaction_id=payment_data.get("transaction_id"),
             amount=total_price,
-            status='pending'
+            status=payment_data.get("status", "pending")
         )
         
         if payment_method == 'cod':
@@ -63,4 +69,4 @@ def create_order(user, shipping_address, coupon_code=None, payment_method='cod')
 
         cart_items.delete()
 
-    return order
+    return order, payment_data
