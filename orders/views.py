@@ -126,14 +126,26 @@ class PaymentCallbackView(APIView):
 
 class InvoiceListView(ListAPIView):
     serializer_class = InvoiceDisplaySerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        return Invoice.objects.filter(order__user=self.request.user)
+        return (Invoice.objects
+                .filter(order__user=self.request.user)
+                .select_related('order')
+                .prefetch_related('order__user', 'order__items',
+                                  'order__items__variant',
+                                  'order__items__variant__product')
+                )
     
 class InvoiceDetailView(RetrieveAPIView):
     serializer_class = InvoiceDisplaySerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        return Invoice.objects.filter(order__user=self.request.user)
+        return (Invoice.objects
+                .filter(order__user=self.request.user)
+                .select_related('order')
+                .prefetch_related('order__user', 'order__items',
+                                  'order__items__variant',
+                                  'order__items__variant__product')
+                )
