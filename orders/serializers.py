@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from cart.models import CartItem
 from .services.order_service import create_order
-from .models import ShippingAddress, Coupon, Order, OrderItem, Payment
+from .models import ShippingAddress, Coupon, Order, OrderItem, Payment, Invoice
 from accounts.serializers import CustomUserSerializer
 
 class ShippingAddressSerializer(serializers.ModelSerializer):
@@ -135,3 +135,27 @@ class CreateOrderSerializer(serializers.ModelSerializer):
         if payment_data:
             order_data['payment_action'] = payment_data
         return order_data
+
+
+class InvoiceDisplaySerializer(serializers.ModelSerializer):
+    order_id = serializers.IntegerField(source="order.id", read_only=True)
+    user = serializers.CharField(source="order.user.email", read_only=True)
+    items = OrderItemSerializer(source="order.items", many=True, read_only=True)
+
+    class Meta:
+        model = Invoice
+        fields = [
+            "id",
+            "invoice_number",
+            "status",
+            "order_id",
+            "user",
+            "billing_address",
+            "issued_at",
+            "due_date",
+            "subtotal",
+            "discount",
+            "tax",
+            "total",
+            "items",
+        ]

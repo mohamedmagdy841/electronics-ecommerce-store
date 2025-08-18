@@ -12,6 +12,8 @@ from .views import (
     OrderItemListView,
     PaymentDetailView,
     PaymentCallbackView,
+    InvoiceListView,
+    InvoiceDetailView,
 )
 
 urlpatterns = [
@@ -30,4 +32,8 @@ urlpatterns = [
     path('<int:order_id>/items/', OrderItemListView.as_view()),
     path('<int:pk>/payment/', PaymentDetailView.as_view()),
     path("payments/callback/<str:gateway_type>/", PaymentCallbackView.as_view()),
+    
+    # Invoices
+    path('invoices/', InvoiceListView.as_view()),
+    path('invoices/<int:pk>/', InvoiceDetailView.as_view()),
 ]

@@ -241,3 +241,34 @@ class Payment(models.Model):
     @property
     def is_paid(self):
         return self.status == 'success'
+
+class Invoice(models.Model):
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('issued', 'Issued'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    order = models.OneToOneField(
+        Order,
+        on_delete=models.CASCADE,
+        related_name="invoice"
+    )
+    invoice_number = models.CharField(
+        max_length=50, unique=True, db_index=True
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft")
+    billing_address = models.TextField()
+    issued_at = models.DateTimeField(auto_now_add=True)
+    due_date = models.DateTimeField(null=True, blank=True)
+
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2)
+    discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total = models.DecimalField(max_digits=10, decimal_places=2)
+
+    class Meta:
+        ordering = ["-issued_at"]
+
+    def __str__(self):
+        return f"Invoice {self.invoice_number} for Order #{self.order_id}"

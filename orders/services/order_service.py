@@ -1,6 +1,7 @@
 from django.db import transaction
 from decimal import Decimal
 from cart.models import CartItem
+from orders.services.invoice_service import create_invoice
 from products.models import Tax
 from ..models import Coupon, Order, OrderItem, Payment
 import uuid
@@ -61,6 +62,7 @@ def create_order(user, shipping_address, coupon_code=None, payment_method='cod')
         )
         
         if payment_method == 'cod':
+            create_invoice(order, status="issued")
             for item in cart_items:
                 if item.variant.stock < item.quantity:
                     raise ValueError(f"Not enough stock for {item.variant.sku}")

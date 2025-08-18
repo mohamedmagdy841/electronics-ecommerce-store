@@ -4,8 +4,10 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
-from .models import Order, OrderItem, Payment, ShippingAddress, Coupon
-from .serializers import CreateOrderSerializer, OrderItemSerializer, OrderSerializer, PaymentSerializer, ShippingAddressSerializer, CouponSerializer
+from orders.services.invoice_service import create_invoice
+
+from .models import Invoice, Order, OrderItem, Payment, ShippingAddress, Coupon
+from .serializers import CreateOrderSerializer, InvoiceDisplaySerializer, OrderItemSerializer, OrderSerializer, PaymentSerializer, ShippingAddressSerializer, CouponSerializer
 from .services.payments.resolver import PaymentGatewayResolver
 
 # -------- Shipping Addresses --------
@@ -109,5 +111,29 @@ class PaymentCallbackView(APIView):
         transaction_id = result.get("transaction_id")
         status = result.get("status")
 
-        Payment.objects.filter(transaction_id=transaction_id).update(status=status)
+        try:
+            payment = Payment.objects.select_related("order").get(transaction_id=transaction_id)
+        except Payment.DoesNotExist:
+            return Response({"detail": "Payment not found."}, status=404)
+
+        payment.status = status
+        payment.save(update_fields=["status"])
+
+        if status == "success" and not hasattr(payment.order, "invoice"):
+            create_invoice(payment.order, status="issued")
         return Response(result)
+
+
+class InvoiceListView(ListAPIView):
+    serializer_class = InvoiceDisplaySerializer
+    # permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return Invoice.objects.filter(order__user=self.request.user)
+    
+class InvoiceDetailView(RetrieveAPIView):
+    serializer_class = InvoiceDisplaySerializer
+    # permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return Invoice.objects.filter(order__user=self.request.user)
