@@ -107,20 +107,41 @@ class PaymentCallbackView(APIView):
     def post(self, request, gateway_type):
         gateway = PaymentGatewayResolver.resolve(gateway_type)
         result = gateway.callback(request)
+        if not result:
+            return Response({"detail": "Unhandled or invalid event"}, status=400)
 
         transaction_id = result.get("transaction_id")
         status = result.get("status")
+        order_id = result.get("order_id")
 
         try:
             payment = Payment.objects.select_related("order").get(transaction_id=transaction_id)
         except Payment.DoesNotExist:
-            return Response({"detail": "Payment not found."}, status=404)
+            try:
+                payment = Payment.objects.select_related("order").get(order_id=order_id, status="pending")
+                payment.transaction_id = transaction_id
+                payment.save(update_fields=["transaction_id"])
+            except Payment.DoesNotExist:
+                return Response({"detail": "Payment not found."}, status=404)
 
         payment.status = status
         payment.save(update_fields=["status"])
 
         if status == "success" and not hasattr(payment.order, "invoice"):
-            create_invoice(payment.order, status="issued")
+            order = payment.order
+
+            with transaction.atomic():
+                for item in order.items.select_related("variant"):
+                    if item.variant.stock < item.quantity:
+                        raise ValueError(f"Not enough stock for {item.variant.sku}")
+                    item.variant.stock -= item.quantity
+                    item.variant.save(update_fields=['stock'])
+
+                    create_invoice(order, status="issued")
+
+                    order.status = "paid"
+                    order.save(update_fields=["status"])
+                    
         return Response(result)
 
 

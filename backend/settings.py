@@ -252,3 +252,12 @@ SOCIAL_AUTH_GITHUB_SCOPE = ['user:email']
 
 TWILIO_SID = os.environ.get('TWILIO_SID')
 TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
+
+
+# Stripe keys
+STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
+
+# Frontend URL
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
