@@ -88,6 +88,18 @@ class StripeGateway(BasePaymentGateway):
                 "transaction_id": intent["id"],
                 "status": "success",
             }
+            
+        elif event["type"] == "payment_intent.payment_failed":
+            intent = event["data"]["object"]
+            order_id = intent.get("metadata", {}).get("order_id")
+            if not order_id:
+                logger.error("PaymentIntent missing order_id metadata")
+                return None
+            return {
+                "order_id": order_id,
+                "transaction_id": intent["id"],
+                "status": "failed",
+            }
 
         elif event["type"] == "charge.succeeded":
             charge = event["data"]["object"]

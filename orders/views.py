@@ -130,17 +130,18 @@ class PaymentCallbackView(APIView):
         if status == "success" and not hasattr(payment.order, "invoice"):
             order = payment.order
 
-            with transaction.atomic():
-                for item in order.items.select_related("variant"):
-                    if item.variant.stock < item.quantity:
-                        raise ValueError(f"Not enough stock for {item.variant.sku}")
-                    item.variant.stock -= item.quantity
-                    item.variant.save(update_fields=['stock'])
+        with transaction.atomic():
+            items = order.items.select_for_update().select_related('variant')
+            for item in items:
+                variant = item.variant
+                if variant.stock < item.quantity:
+                    raise ValueError(f"Not enough stock for {variant.sku}")
+                variant.stock -= item.quantity
+                variant.save(update_fields=['stock'])
+            create_invoice(order, status='issued')
+            order.status = 'paid'
+            order.save(update_fields=['status'])
 
-                    create_invoice(order, status="issued")
-
-                    order.status = "paid"
-                    order.save(update_fields=["status"])
                     
         return Response(result)
 
