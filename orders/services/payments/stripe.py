@@ -14,7 +14,7 @@ class StripeGateway(BasePaymentGateway):
 
     def send_payment(self, request, user, amount: Decimal, order):
         amount_cents = int(amount * 100)
-
+        idempotency_key = f"order-{order.id}"
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
             mode="payment",
@@ -40,8 +40,8 @@ class StripeGateway(BasePaymentGateway):
             },
             success_url=settings.FRONTEND_URL + "/payment/success?session_id={CHECKOUT_SESSION_ID}",
             cancel_url=settings.FRONTEND_URL + "/payment/cancel",
+            idempotency_key=idempotency_key,
         )
-
         return {
             "transaction_id": session.id,
             "redirect_url": session.url,
