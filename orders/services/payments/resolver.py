@@ -1,3 +1,4 @@
+from .paypal import PaypalGateway
 from .cod import CashOnDeliveryGateway
 from .stripe import StripeGateway
 
@@ -5,6 +6,7 @@ class PaymentGatewayResolver:
     GATEWAYS = {
         "cod": CashOnDeliveryGateway,
         "stripe": StripeGateway,
+        "paypal": PaypalGateway,
     }
 
     @classmethod

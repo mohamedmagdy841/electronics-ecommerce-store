@@ -253,11 +253,20 @@ SOCIAL_AUTH_GITHUB_SCOPE = ['user:email']
 TWILIO_SID = os.environ.get('TWILIO_SID')
 TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
 
+# Frontend URL
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
 
 # Stripe keys
 STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
 STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
 
-# Frontend URL
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+# Paypal keys
+PAYPAL_CLIENT_ID = os.environ.get('PAYPAL_CLIENT_ID')
+PAYPAL_CLIENT_SECRET = os.environ.get('PAYPAL_CLIENT_SECRET')
+PAYPAL_API_BASE = os.environ.get('PAYPAL_API_BASE')
+PAYPAL_CURRENCY = os.environ.get('PAYPAL_CURRENCY')
+PAYMENT_RETURN_URL = FRONTEND_URL + "/payment/success"
+PAYMENT_CANCEL_URL = FRONTEND_URL + "/payment/cancel"
+
+
