@@ -23,14 +23,11 @@ class PaypalGateway(BasePaymentGateway):
 
     def callback(self, request):
         # PayPal returns ?token=<ORDER_ID> to return_url
-        
         order_id = None
         if hasattr(request,"data"):
             order_id = request.data.get("order_id") or request.data.get("orderID")
-            print("order_id first if",order_id)
         if not order_id and hasattr(request,"query_params"):
             order_id = request.query_params.get("token")
-            print("order_id second if",order_id)
         if not order_id:
             return None
 

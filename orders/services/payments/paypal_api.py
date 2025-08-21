@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 TOKEN_KEY, EXP_KEY = "paypal_token", "paypal_token_exp"
 
-def get_access_token() -> str:
+def _get_access_token() -> str:
     cached = cache.get(TOKEN_KEY)
     exp = cache.get(EXP_KEY)
     now = int(time.time())
@@ -32,20 +32,34 @@ def get_access_token() -> str:
 
 
 def create_order(amount: str, currency: str, return_url: str, cancel_url: str, custom_id: str):
+    # idempotency
+    cache_key = f"paypal_order_{custom_id}"
+    request_id = cache.get(cache_key)
+    if not request_id:
+        request_id = str(uuid.uuid4())
+        cache.set(cache_key, request_id, 60 * 60 * 24)
+    
     url = f"{settings.PAYPAL_API_BASE}/v2/checkout/orders"
-    token = get_access_token()
+    token = _get_access_token()
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
-        "PayPal-Request-Id": str(uuid.uuid4()),  # idempotency
+        "PayPal-Request-Id": request_id,
         "Prefer": "return=representation",
     }
     body = {
         "intent": "CAPTURE",
-        "application_context": {
-            "return_url": return_url,
-            "cancel_url": cancel_url,
-            "user_action": "PAY_NOW"
+        "payment_source": {
+            "paypal": {
+                "experience_context": {
+                    "payment_method_preference": "IMMEDIATE_PAYMENT_REQUIRED",
+                    "landing_page": "LOGIN",
+                    "shipping_preference": "GET_FROM_FILE",
+                    "user_action": "PAY_NOW",
+                    "return_url": return_url,
+                    "cancel_url": cancel_url
+                }
+            }
         },
         "purchase_units": [
             {
@@ -63,19 +77,25 @@ def create_order(amount: str, currency: str, return_url: str, cancel_url: str, c
 
 
 def capture_order(order_id: str):
+    # idempotency
+    cache_key = f"paypal_capture_{order_id}"
+    request_id = cache.get(cache_key)
+    if not request_id:
+        request_id = str(uuid.uuid4())
+        cache.set(cache_key, request_id, 60 * 60 * 24)
+    
     url = f"{settings.PAYPAL_API_BASE}/v2/checkout/orders/{order_id}/capture"
-    token = get_access_token()
+    token = _get_access_token()
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
-        "PayPal-Request-Id": str(uuid.uuid4()),
+        "PayPal-Request-Id": request_id,
     }
     resp = requests.post(url, headers=headers, timeout=30)
     resp.raise_for_status()
     data = resp.json()
     status = data.get("status")
     pu = data.get("purchase_units",[{}])[0]
-    custom_id = pu.get("custom_id")
     captures = pu.get("payments",{}).get("captures",[])
     custom_id = captures[0]["custom_id"]
     capture_id = captures[0]["id"] if captures else order_id
