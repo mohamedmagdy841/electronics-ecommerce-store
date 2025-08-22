@@ -43,7 +43,8 @@ class StripeGateway(BasePaymentGateway):
             idempotency_key=idempotency_key,
         )
         return {
-            "transaction_id": session.id,
+            "order_id": session.id,
+            "transaction_id": None,
             "redirect_url": session.url,
             "status": "pending",
         }
@@ -64,39 +65,31 @@ class StripeGateway(BasePaymentGateway):
         
         logger.info("Received Stripe event: %s", event["type"])
         
+        print("Event from stripe webhook ->", event)
+        
         if event["type"] == "checkout.session.completed":
             session = event["data"]["object"]
-            order_id = session.get("metadata", {}).get("order_id")
-            intent_id = session["payment_intent"]
-            if not order_id:
-                logger.error("Session missing order_id metadata")
-                return None
+            intent_id = session.get("payment_intent")
             return {
-                "order_id": order_id,
+                "order_id": session["id"],
                 "transaction_id": intent_id,
                 "status": "success",
             }
 
         elif event["type"] == "payment_intent.succeeded":
             intent = event["data"]["object"]
-            order_id = intent.get("metadata", {}).get("order_id")
-            if not order_id:
-                logger.error("PaymentIntent missing order_id metadata")
-                return None
+            session_id = intent.get("checkout_session") or intent.get("id")
             return {
-                "order_id": order_id,
+                "order_id": session_id,
                 "transaction_id": intent["id"],
                 "status": "success",
             }
-            
+
         elif event["type"] == "payment_intent.payment_failed":
             intent = event["data"]["object"]
-            order_id = intent.get("metadata", {}).get("order_id")
-            if not order_id:
-                logger.error("PaymentIntent missing order_id metadata")
-                return None
+            session_id = intent.get("checkout_session") or intent.get("id")
             return {
-                "order_id": order_id,
+                "order_id": session_id,
                 "transaction_id": intent["id"],
                 "status": "failed",
             }
@@ -108,11 +101,13 @@ class StripeGateway(BasePaymentGateway):
             except Exception as e:
                 logger.error("Failed to retrieve PaymentIntent: %s", e)
                 return None
+            
+            session_id = None
+            sessions = stripe.checkout.Session.list(payment_intent=intent["id"], limit=1)
+            if sessions and sessions.data:
+                session_id = sessions.data[0].id  
 
-            order_id = intent.get("metadata", {}).get("order_id")
-            if not order_id:
-                logger.error("Charge’s PaymentIntent missing order_id metadata")
-                return None
+            order_id = session_id or intent["id"]  
             return {
                 "order_id": order_id,
                 "transaction_id": intent["id"],

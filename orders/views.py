@@ -110,24 +110,21 @@ class PaymentCallbackView(APIView):
         transaction_id = result.get("transaction_id")
         status = result.get("status")
         order_id = result.get("order_id")
-
+        
         # Find payment by transaction_id OR order_id
         payment = Payment.objects.filter(transaction_id=transaction_id).select_related("order").first()
         if not payment:
             payment = Payment.objects.filter(gateway_order_id=order_id).select_related("order").first()
-            print("If Not Payment ->", payment)
 
         if not payment:
             return Response({"detail": "Payment not found."}, status=404)
 
-        print("Payment ->", payment)
         # Update payment once
         payment.transaction_id = transaction_id
         payment.status = status
         payment.save(update_fields=["transaction_id", "status"])
 
         order = payment.order
-        print("Order ->", order)
         # Only handle stock + invoice if successful
         if status == "success" and not hasattr(order, "invoice"):
             with transaction.atomic():
@@ -139,15 +136,10 @@ class PaymentCallbackView(APIView):
                     variant.stock -= item.quantity
                     variant.save(update_fields=['stock'])
 
-                # internal invoice, not Paymob API
                 create_internal_invoice(order, status='issued')
 
                 order.status = 'paid'
                 order.save(update_fields=['status'])
-
-        print(f"✅ Payment {payment.id} updated -> transaction_id={payment.transaction_id}, status={payment.status}")
-        print(f"✅ Order {order.id} updated -> status={order.status}")
-
                     
         return Response(result)
     
