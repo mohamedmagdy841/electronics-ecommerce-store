@@ -95,8 +95,8 @@ def capture_order(order_id: str):
     resp.raise_for_status()
     data = resp.json()
     status = data.get("status")
+    gateway_order_id = data.get("id")
     pu = data.get("purchase_units",[{}])[0]
     captures = pu.get("payments",{}).get("captures",[])
-    custom_id = captures[0]["custom_id"]
     capture_id = captures[0]["id"] if captures else order_id
-    return {"status":status,"custom_id":custom_id,"capture_id":capture_id}
+    return {"status":status,"gateway_order_id":gateway_order_id,"capture_id":capture_id}

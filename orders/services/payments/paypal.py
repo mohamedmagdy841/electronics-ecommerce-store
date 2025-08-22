@@ -16,7 +16,8 @@ class PaypalGateway(BasePaymentGateway):
             custom_id=str(order.id),
         )
         return {
-            "transaction_id": order_id,   
+            "order_id": order_id,
+            "transaction_id": None,   
             "redirect_url": approve_url,  # FE must redirect user here
             "status": "pending",
         }
@@ -34,12 +35,12 @@ class PaypalGateway(BasePaymentGateway):
         result = capture_order(order_id)
         if result["status"] == "COMPLETED":
             return {
-                "order_id": result["custom_id"],
+                "order_id": result["gateway_order_id"],
                 "transaction_id": result["capture_id"],
                 "status": "success",
             }
         return {
-            "order_id": result["custom_id"],
+            "order_id": result["gateway_order_id"],
             "transaction_id": result["capture_id"],
             "status": "failed",
         }
