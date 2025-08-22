@@ -1,8 +1,9 @@
 from django.contrib import admin
-
+from unfold.admin import ModelAdmin
 from accounts.models import User, UserProfile
 
-class UserAdmin(admin.ModelAdmin):
+@admin.register(User)
+class UserAdmin(ModelAdmin):
     list_display = ('email', 'first_name', 'last_name', 'username', 'role', 'is_active', 'is_superuser', 'is_verified')
     search_fields = ('email', 'first_name', 'last_name', 'username')
     list_filter = ('role', 'is_active', 'is_superuser', 'is_verified')
@@ -15,7 +16,8 @@ class UserAdmin(admin.ModelAdmin):
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
     
-class UserProfileAdmin(admin.ModelAdmin):
+@admin.register(UserProfile)   
+class UserProfileAdmin(ModelAdmin):
     list_display = ('user', 'profile_picture', 'address', 'city', 'state', 'country', 'postal_code')
     search_fields = ('user__email', 'user__first_name', 'user__last_name', 'user__username')
     list_filter = ('city', 'state', 'country')
@@ -27,5 +29,3 @@ class UserProfileAdmin(admin.ModelAdmin):
         ('Important dates', {'fields': ('created_at', 'modified_at')}),
     )
 
-admin.site.register(User, UserAdmin)
-admin.site.register(UserProfile, UserProfileAdmin)
