@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, re_path
 
 from .views import (
     ShippingAddressListCreate,
@@ -31,7 +31,7 @@ urlpatterns = [
     path('<int:pk>/', OrderDetailView.as_view()),
     path('<int:order_id>/items/', OrderItemListView.as_view()),
     path('<int:pk>/payment/', PaymentDetailView.as_view()),
-    path("payments/callback/<str:gateway_type>/", PaymentCallbackView.as_view()),
+    path("payments/callback/<str:gateway_type>", PaymentCallbackView.as_view()),
     
     # Invoices
     path('invoices/', InvoiceListView.as_view()),

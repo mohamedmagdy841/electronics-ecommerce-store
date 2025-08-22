@@ -1,3 +1,4 @@
+from .paymob import PaymobGateway
 from .paypal import PaypalGateway
 from .cod import CashOnDeliveryGateway
 from .stripe import StripeGateway
@@ -7,6 +8,7 @@ class PaymentGatewayResolver:
         "cod": CashOnDeliveryGateway,
         "stripe": StripeGateway,
         "paypal": PaypalGateway,
+        "paymob": PaymobGateway,
     }
 
     @classmethod

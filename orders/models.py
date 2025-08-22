@@ -232,6 +232,7 @@ class Payment(models.Model):
         choices=STATUS_CHOICES,
         default='pending'
     )
+    gateway_order_id = models.CharField(max_length=255, null=True, blank=True)
     transaction_id = models.CharField(max_length=100, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

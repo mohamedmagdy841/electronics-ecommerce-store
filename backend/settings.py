@@ -269,4 +269,9 @@ PAYPAL_CURRENCY = os.environ.get('PAYPAL_CURRENCY')
 PAYMENT_RETURN_URL = FRONTEND_URL + "/payment/success"
 PAYMENT_CANCEL_URL = FRONTEND_URL + "/payment/cancel"
 
-
+# Paymob keys
+PAYMOB_API_KEY = os.environ.get('PAYMOB_API_KEY')
+PAYMOB_API_BASE = os.environ.get('PAYMOB_API_BASE')
+PAYMOBE_PUBLIC_KEY = os.environ.get('PAYMOBE_PUBLIC_KEY')
+PAYMOB_CURRENCY = os.environ.get('PAYMOB_CURRENCY')
+PAYMOB_INTEGRATIONS = os.environ.get('PAYMOB_INTEGRATIONS').split(',')

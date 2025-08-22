@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
-from orders.services.invoice_service import create_invoice
+from orders.services.invoice_service import create_internal_invoice
 
 from .models import Invoice, Order, OrderItem, Payment, ShippingAddress, Coupon
 from .serializers import CreateOrderSerializer, InvoiceDisplaySerializer, OrderItemSerializer, OrderSerializer, PaymentSerializer, ShippingAddressSerializer, CouponSerializer
@@ -104,45 +104,63 @@ class PaymentDetailView(RetrieveAPIView):
 class PaymentCallbackView(APIView):
     permission_classes = [AllowAny]
     
-    def post(self, request, gateway_type):
-        gateway = PaymentGatewayResolver.resolve(gateway_type)
-        result = gateway.callback(request)
+    def _process_result(self, result):
         if not result:
             return Response({"detail": "Unhandled or invalid event"}, status=400)
-
         transaction_id = result.get("transaction_id")
         status = result.get("status")
         order_id = result.get("order_id")
 
-        try:
-            payment = Payment.objects.select_related("order").get(transaction_id=transaction_id)
-        except Payment.DoesNotExist:
-            try:
-                payment = Payment.objects.select_related("order").get(order_id=order_id, status="pending")
-                payment.transaction_id = transaction_id
-                payment.save(update_fields=["transaction_id"])
-            except Payment.DoesNotExist:
-                return Response({"detail": "Payment not found."}, status=404)
+        # Find payment by transaction_id OR order_id
+        payment = Payment.objects.filter(transaction_id=transaction_id).select_related("order").first()
+        if not payment:
+            payment = Payment.objects.filter(gateway_order_id=order_id).select_related("order").first()
+            print("If Not Payment ->", payment)
 
+        if not payment:
+            return Response({"detail": "Payment not found."}, status=404)
+
+        print("Payment ->", payment)
+        # Update payment once
+        payment.transaction_id = transaction_id
         payment.status = status
-        payment.save(update_fields=["status"])
+        payment.save(update_fields=["transaction_id", "status"])
 
-        if status == "success" and not hasattr(payment.order, "invoice"):
-            order = payment.order
+        order = payment.order
+        print("Order ->", order)
+        # Only handle stock + invoice if successful
+        if status == "success" and not hasattr(order, "invoice"):
+            with transaction.atomic():
+                items = order.items.select_for_update().select_related('variant')
+                for item in items:
+                    variant = item.variant
+                    if variant.stock < item.quantity:
+                        raise ValueError(f"Not enough stock for {variant.sku}")
+                    variant.stock -= item.quantity
+                    variant.save(update_fields=['stock'])
 
-        with transaction.atomic():
-            items = order.items.select_for_update().select_related('variant')
-            for item in items:
-                variant = item.variant
-                if variant.stock < item.quantity:
-                    raise ValueError(f"Not enough stock for {variant.sku}")
-                variant.stock -= item.quantity
-                variant.save(update_fields=['stock'])
-            create_invoice(order, status='issued')
-            order.status = 'paid'
-            order.save(update_fields=['status'])
+                # internal invoice, not Paymob API
+                create_internal_invoice(order, status='issued')
+
+                order.status = 'paid'
+                order.save(update_fields=['status'])
+
+        print(f"✅ Payment {payment.id} updated -> transaction_id={payment.transaction_id}, status={payment.status}")
+        print(f"✅ Order {order.id} updated -> status={order.status}")
 
                     
+        return Response(result)
+    
+    def post(self, request, gateway_type):
+        gateway = PaymentGatewayResolver.resolve(gateway_type)
+        result = gateway.callback(request)
+        self._process_result(result)
+        return Response(result)
+    
+    def get(self, request, gateway_type):
+        gateway = PaymentGatewayResolver.resolve(gateway_type)
+        result = gateway.callback_query(request.query_params)
+        self._process_result(result)
         return Response(result)
 
 
