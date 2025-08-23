@@ -10,7 +10,8 @@ class UserManager(BaseUserManager):
         
         if email:
             email = self.normalize_email(email)
-            
+        
+        extra_fields.setdefault('role', User.CUSTOMER)
         user = self.model(email=email, phone_number=phone_number, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -34,10 +35,12 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     ADMIN = 1
     CUSTOMER = 2
+    VENDOR = 3
     
     ROLE_CHOICES = (
         (ADMIN, 'Admin'),
         (CUSTOMER, 'Customer'),
+        (VENDOR, 'Vendor'),
     )
 
     first_name = models.CharField(max_length=50)
@@ -81,6 +84,19 @@ class UserProfile(models.Model):
     
     def __str__(self):
         return self.user.email
+    
+class VendorProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="vendor_profile")
+    store_name = models.CharField(max_length=100)
+    business_license = models.CharField(max_length=100, blank=True, null=True)
+    address = models.CharField(max_length=250, blank=True, null=True)
+    business_phone = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    modified_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.store_name
+
     
 class PhoneOtp(models.Model):
     phone_number = models.CharField(max_length=20, unique=True)

@@ -8,7 +8,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import serializers
 
 from cart.utils import merge_guest_cart
-from .serializers import CustomUserCreateSerializer
+from .serializers import CustomUserCreateSerializer, VendorRegisterSerializer, VendorSerializer
 from .models import PhoneOtp, User
 from .utils import send_otp_via_sms
 
@@ -77,6 +77,44 @@ class CustomLoginView(APIView):
         )
         return resp
     
+@extend_schema(
+    tags=["Vendors"],
+    summary="Vendor login (username & password)",
+    description="Authenticate vendor and return JWT tokens.",
+    auth=[],  # public endpoint
+    request=inline_serializer(
+        name="VendorLoginRequest",
+        fields={
+            "username": serializers.CharField(),
+            "password": serializers.CharField(write_only=True),
+        },
+    ),
+    responses={
+        200: inline_serializer(
+            name="VendorTokenPair",
+            fields={
+                "access": serializers.CharField(),
+                "refresh": serializers.CharField(),
+            },
+        ),
+        401: OpenApiResponse(description="Invalid credentials or not a vendor"),
+    },
+)
+class VendorLoginView(APIView):
+    throttle_scope = 'login'
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+
+        user = authenticate(username=username, password=password)
+        if user is None or user.role != User.VENDOR:
+            return Response({'detail': 'Invalid credentials or not a vendor'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+        }, status=status.HTTP_200_OK)
     
 @extend_schema_view(
     post=extend_schema(
@@ -92,6 +130,20 @@ class CustomRegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = CustomUserCreateSerializer
 
+
+@extend_schema_view(
+    post=extend_schema(
+        tags=["Vendors"],
+        summary="Register a new vendor",
+        description="Create a vendor account with attached VendorProfile.",
+        auth=[],  # public endpoint
+        responses={201: VendorSerializer},
+    )
+)
+class VendorRegisterView(generics.CreateAPIView):
+    throttle_scope = 'register'
+    queryset = User.objects.all()
+    serializer_class = VendorRegisterSerializer
 
 @extend_schema(
     tags=["Accounts"],
