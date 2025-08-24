@@ -364,33 +364,40 @@ class VendorProductViewSet(viewsets.ModelViewSet):
         return Product.objects.filter(vendor=self.request.user)
 
 
-class VendorProductVariantViewSet(viewsets.ModelViewSet):
+class VendorProductVariantListCreateView(generics.ListCreateAPIView):
     serializer_class = VendorProductVariantSerializer
     permission_classes = [IsVendor, IsVendorOwner]
-
+    
+    @cached_property
+    def product(self):
+        try:
+            return Product.objects.get(slug=self.kwargs['slug'], vendor=self.request.user)
+        except Product.DoesNotExist:
+            raise NotFound("Product not found.")
+        
     def get_queryset(self):
-        return ProductVariant.objects.filter(product__vendor=self.request.user)
+        return ProductVariant.objects.filter(product=self.product)
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['product'] = self.product
+        return context
 
-class VendorProductImageViewSet(viewsets.ModelViewSet):
-    serializer_class = VendorProductImageSerializer
+class VendorProductVariantRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = VendorProductVariantSerializer
     permission_classes = [IsVendor, IsVendorOwner]
-
+    
+    @cached_property
+    def product(self):
+        try:
+            return Product.objects.get(slug=self.kwargs['slug'], vendor=self.request.user)
+        except Product.DoesNotExist:
+            raise NotFound("Product not found.")
+        
     def get_queryset(self):
-        return ProductImage.objects.filter(product__vendor=self.request.user)
+        return ProductVariant.objects.filter(product=self.product)
 
-
-class VendorProductSpecificationViewSet(viewsets.ModelViewSet):
-    serializer_class = VendorProductSpecificationSerializer
-    permission_classes = [IsVendor, IsVendorOwner]
-
-    def get_queryset(self):
-        return ProductSpecification.objects.filter(product__vendor=self.request.user)
-
-
-class VendorVariantSpecificationViewSet(viewsets.ModelViewSet):
-    serializer_class = VendorVariantSpecificationSerializer
-    permission_classes = [IsVendor, IsVendorOwner]
-
-    def get_queryset(self):
-        return VariantSpecification.objects.filter(variant__product__vendor=self.request.user)
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['product'] = self.product
+        return context

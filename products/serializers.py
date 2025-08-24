@@ -237,10 +237,30 @@ class VendorProductVariantSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductVariant
         fields = [
-            'id', 'product', 'sku', 'price', 'discounted_price',
+            'id', 'sku', 'price', 'discounted_price',
             'stock', 'is_default'
         ]
         read_only_fields = ['id', 'sku']
+    
+    def validate(self, attrs):
+        product = self.context['product']
+        is_default = attrs.get("is_default", False)
+
+        if is_default:
+            qs = product.variants.filter(is_default=True)
+            if self.instance:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise serializers.ValidationError("This product already has a default variant.")
+            
+        return attrs
+    
+    def create(self, validated_data):
+        product = self.context.get('product')
+        return ProductVariant.objects.create(
+            product=product,
+            **validated_data
+        )
 
 class VendorProductImageSerializer(serializers.ModelSerializer):
     class Meta:

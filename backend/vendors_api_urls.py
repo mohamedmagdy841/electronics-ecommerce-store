@@ -6,24 +6,22 @@ from accounts.views import (
 from rest_framework.routers import DefaultRouter
 from products.views import (
     VendorProductViewSet,
-    VendorProductVariantViewSet,
-    VendorProductImageViewSet,
-    VendorProductSpecificationViewSet,
-    VendorVariantSpecificationViewSet,
+    VendorProductVariantListCreateView,
+    VendorProductVariantRetrieveUpdateDestroyView
 )
 
 # Products
 router = DefaultRouter()
 router.register(r'products', VendorProductViewSet, basename='vendor-products')
-router.register(r'variants', VendorProductVariantViewSet, basename='vendor-variants')
-router.register(r'images', VendorProductImageViewSet, basename='vendor-images')
-router.register(r'product-specs', VendorProductSpecificationViewSet, basename='vendor-product-specs')
-router.register(r'variant-specs', VendorVariantSpecificationViewSet, basename='vendor-variant-specs')
+
 
 
 urlpatterns = [
     # Auth
     path("auth/", VendorRegisterView.as_view(), name="vendor-register"),
     path("auth/login/", VendorLoginView.as_view(), name="vendor-login"),
+    
+    path("products/<slug:slug>/variants/", VendorProductVariantListCreateView.as_view()),
+    path("products/<slug:slug>/variants/<int:pk>/", VendorProductVariantRetrieveUpdateDestroyView.as_view()),
 ]
 urlpatterns += router.urls
