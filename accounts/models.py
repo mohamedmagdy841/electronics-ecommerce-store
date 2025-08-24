@@ -2,7 +2,11 @@ from datetime import timedelta
 from django.utils import timezone
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-
+from backend.utils import (
+    HashedUploadPath,
+    validate_image_extension,
+    validate_image_size
+)
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, phone_number=None, **extra_fields):
         if not email and not phone_number:
@@ -73,7 +77,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    profile_picture = models.ImageField(upload_to='users/profile_pictures', blank=True, null=True)
+    profile_picture = models.ImageField(
+        upload_to=HashedUploadPath('users/profile_pictures'),
+        validators=[validate_image_extension, validate_image_size],
+        blank=True, null=True
+    )
     address = models.CharField(max_length=250, blank=True, null=True)
     city = models.CharField(max_length=50, blank=True, null=True)
     state = models.CharField(max_length=50, blank=True, null=True)

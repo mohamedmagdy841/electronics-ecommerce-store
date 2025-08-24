@@ -6,7 +6,11 @@ from django.utils.text import slugify
 from django.db.models import Q
 from django.conf import settings
 from django.core.exceptions import ValidationError
-
+from backend.utils import (
+    HashedUploadPath,
+    validate_image_extension,
+    validate_image_size
+)
 class Category(models.Model):
     parent = models.ForeignKey(
         'self',
@@ -174,7 +178,10 @@ class VariantSpecification(models.Model):
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images')
     variant = models.ForeignKey(ProductVariant, on_delete=models.CASCADE, related_name='images', null=True, blank=True)
-    url = models.ImageField(upload_to="products/")
+    url = models.ImageField(
+        upload_to=HashedUploadPath("products/"),
+        validators=[validate_image_extension, validate_image_size]
+    )
     alt_text = models.CharField(max_length=255, blank=True, null=True, help_text="Alternative text for accessibility/SEO.")
     caption = models.CharField(max_length=255, blank=True, null=True, help_text="Short caption or description of the image.")
     is_primary = models.BooleanField(default=False)

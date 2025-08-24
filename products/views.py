@@ -3,7 +3,7 @@ from django.db.models.functions import Coalesce
 from rest_framework import generics, viewsets
 from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
-
+from django.shortcuts import get_object_or_404
 from .permissions import IsOwnerOrReadOnly, IsVendor, IsVendorOwner
 from .models import (
     Brand, Product, Category, ProductImage,
@@ -29,7 +29,7 @@ from .filters import ProductFilter
 from rest_framework import filters
 from rest_framework.exceptions import NotFound
 from django.utils.functional import cached_property
-
+from rest_framework.parsers import MultiPartParser, FormParser
 
 from drf_spectacular.utils import (
     extend_schema,
@@ -400,4 +400,95 @@ class VendorProductVariantRetrieveUpdateDestroyView(generics.RetrieveUpdateDestr
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context['product'] = self.product
+        return context
+
+class VendorProductImageListCreateView(generics.ListCreateAPIView):
+    serializer_class = VendorProductImageSerializer
+    permission_classes = [IsVendor, IsVendorOwner]
+    parser_classes = [MultiPartParser, FormParser]
+    
+    @cached_property
+    def product(self):
+        return get_object_or_404(Product, slug=self.kwargs["slug"], vendor=self.request.user)
+
+    def get_queryset(self):
+        return ProductImage.objects.filter(product=self.product, variant__isnull=True)  # product-only images
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["product"] = self.product
+        return context
+
+
+class VendorProductImageDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = VendorProductImageSerializer
+    permission_classes = [IsVendor, IsVendorOwner]
+    parser_classes = [MultiPartParser, FormParser]
+    
+    @cached_property
+    def product(self):
+        return get_object_or_404(Product, slug=self.kwargs["slug"], vendor=self.request.user)
+
+    def get_queryset(self):
+        return ProductImage.objects.filter(product=self.product, variant__isnull=True)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["product"] = self.product
+        return context
+
+
+class VendorVariantImageListCreateView(generics.ListCreateAPIView):
+    serializer_class = VendorProductImageSerializer
+    permission_classes = [IsVendor, IsVendorOwner]
+    parser_classes = [MultiPartParser, FormParser]
+    
+    @cached_property
+    def product(self):
+        prod = get_object_or_404(Product, slug=self.kwargs["slug"], vendor=self.request.user)
+        print("prod", prod)
+        return prod
+    
+    @cached_property
+    def variant(self):
+        var = get_object_or_404(ProductVariant, pk=self.kwargs["variant_id"], product=self.product)
+        print("var", var)
+        return var
+    
+    def get_queryset(self):
+        return ProductImage.objects.filter(
+        product=self.product,
+        variant=self.variant
+    )
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["product"] = self.product
+        context["variant"] = self.variant
+        return context
+
+
+class VendorVariantImageDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = VendorProductImageSerializer
+    permission_classes = [IsVendor, IsVendorOwner]
+    parser_classes = [MultiPartParser, FormParser]
+
+    @cached_property
+    def product(self):
+        return get_object_or_404(Product, slug=self.kwargs["slug"], vendor=self.request.user)
+
+    @cached_property
+    def variant(self):
+        return get_object_or_404(ProductVariant, pk=self.kwargs["variant_id"], product=self.product)
+
+    def get_queryset(self):
+        return ProductImage.objects.filter(
+        product=self.product,
+        variant=self.variant
+    )
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["product"] = self.product
+        context["variant"] = self.variant
         return context

@@ -265,15 +265,13 @@ class VendorProductVariantSerializer(serializers.ModelSerializer):
 class VendorProductImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
-        fields = ['id', 'product', 'variant', 'url', 'alt_text', 'caption', 'is_primary']
-        read_only_fields = ['id']
+        fields = ["id", "url", "alt_text", "caption", "is_primary", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at"]
 
-    def validate(self, attrs):
-        product = attrs.get('product')
-        variant = attrs.get('variant')
-        if variant and variant.product_id != product.id:
-            raise serializers.ValidationError("Variant must belong to the product.")
-        return attrs
+    def create(self, validated_data):
+        product = self.context["product"]
+        variant = self.context.get("variant", None)
+        return ProductImage.objects.create(product=product, variant=variant, **validated_data)
 
 class VendorProductSpecificationSerializer(serializers.ModelSerializer):
     class Meta:
