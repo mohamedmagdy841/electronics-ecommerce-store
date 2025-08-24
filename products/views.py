@@ -1,17 +1,26 @@
 from django.db.models import Avg, Count, Prefetch, Q
 from django.db.models.functions import Coalesce
-from rest_framework import generics
+from rest_framework import generics, viewsets
 from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 
-from products.permissions import IsOwnerOrReadOnly
-from .models import Brand, Product, Category, ProductImage, ProductReview, ProductVariant
+from .permissions import IsOwnerOrReadOnly, IsVendor, IsVendorOwner
+from .models import (
+    Brand, Product, Category, ProductImage,
+    ProductReview, ProductSpecification,
+    ProductVariant, VariantSpecification
+)
 from .serializers import (
     ProductReviewSerializer,
     ProductSerializer,
     ProductDetailSerializer,
     CategorySerializer,
-    BrandSerializer
+    BrandSerializer,
+    VendorProductImageSerializer,
+    VendorProductSerializer,
+    VendorProductSpecificationSerializer,
+    VendorProductVariantSerializer,
+    VendorVariantSpecificationSerializer
 )
 from .pagination import CustomProductPagination, RelatedLimitOffset, ReviewCursorPagination
 from django.core.cache import cache
@@ -320,4 +329,43 @@ class ProductReviewDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ProductReviewSerializer
     permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
-    
+
+# --------------- Vendor ----------------------
+class VendorProductViewSet(viewsets.ModelViewSet):
+    serializer_class = VendorProductSerializer
+    permission_classes = [IsVendor, IsVendorOwner]
+
+    def get_queryset(self):
+        return Product.objects.filter(vendor=self.request.user)
+
+
+class VendorProductVariantViewSet(viewsets.ModelViewSet):
+    serializer_class = VendorProductVariantSerializer
+    permission_classes = [IsVendor, IsVendorOwner]
+
+    def get_queryset(self):
+        return ProductVariant.objects.filter(product__vendor=self.request.user)
+
+
+class VendorProductImageViewSet(viewsets.ModelViewSet):
+    serializer_class = VendorProductImageSerializer
+    permission_classes = [IsVendor, IsVendorOwner]
+
+    def get_queryset(self):
+        return ProductImage.objects.filter(product__vendor=self.request.user)
+
+
+class VendorProductSpecificationViewSet(viewsets.ModelViewSet):
+    serializer_class = VendorProductSpecificationSerializer
+    permission_classes = [IsVendor, IsVendorOwner]
+
+    def get_queryset(self):
+        return ProductSpecification.objects.filter(product__vendor=self.request.user)
+
+
+class VendorVariantSpecificationViewSet(viewsets.ModelViewSet):
+    serializer_class = VendorVariantSpecificationSerializer
+    permission_classes = [IsVendor, IsVendorOwner]
+
+    def get_queryset(self):
+        return VariantSpecification.objects.filter(variant__product__vendor=self.request.user)

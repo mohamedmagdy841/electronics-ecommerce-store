@@ -56,6 +56,13 @@ class Product(models.Model):
         NEW = "new", "New"
         USED = "used", "Used"
         REFURBISHED = "refurbished", "Refurbished"
+        
+    vendor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="products",
+        help_text="Vendor who owns this product."
+    )
     
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="products")
     brand = models.ForeignKey(Brand, on_delete=models.CASCADE, related_name="products")

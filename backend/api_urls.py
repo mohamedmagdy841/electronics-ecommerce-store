@@ -9,8 +9,6 @@ from drf_spectacular.views import (
 from accounts.views import (
     CustomLoginView,
     CustomRegisterView,
-    VendorLoginView,
-    VendorRegisterView,
     SendOtpView, VerifyOtpView
 )
 
@@ -34,15 +32,12 @@ urlpatterns = [
     
     # Accounts
     path('accounts/', include('accounts.urls')),
-    # customer endpoints
-    path('auth/users/login/', CustomLoginView.as_view(), name='custom-login'),
-    path("auth/users/", CustomRegisterView.as_view(), name="custom-register"),
-    path('auth/users/send-otp/', SendOtpView.as_view(), name='send-otp'),
-    path('auth/users/verify-otp/', VerifyOtpView.as_view(), name='verify-otp'),
     
-    # vendor endpoints
-    path("auth/vendors/", VendorRegisterView.as_view(), name="vendor-register"),
-    path("auth/vendors/login/", VendorLoginView.as_view(), name="vendor-login"),
+    # customer endpoints
+    path('users/auth/login/', CustomLoginView.as_view(), name='custom-login'),
+    path("users/auth/", CustomRegisterView.as_view(), name="custom-register"),
+    path('users/auth/send-otp/', SendOtpView.as_view(), name='send-otp'),
+    path('users/auth/verify-otp/', VerifyOtpView.as_view(), name='verify-otp'),
     
     # Djoser defaults
     path('auth/', include('djoser.urls')),

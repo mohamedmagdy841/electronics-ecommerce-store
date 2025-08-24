@@ -204,3 +204,58 @@ class ProductReviewSerializer(serializers.ModelSerializer):
             product=product,
             **validated_data
         )
+
+# ----------Vendor----------
+
+class VendorProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = [
+            'id', 'category', 'brand', 'name', 'description',
+            'warranty_years', 'condition', 'is_featured',
+            'is_weekly_deal', 'weekly_deal_expires'
+        ]
+        read_only_fields = ['id']
+
+    def create(self, validated_data):
+        request = self.context['request']
+        validated_data['vendor'] = request.user
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        validated_data.pop('vendor', None)
+        return super().update(instance, validated_data)
+
+class VendorProductVariantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductVariant
+        fields = [
+            'id', 'product', 'sku', 'price', 'discounted_price',
+            'stock', 'is_default'
+        ]
+        read_only_fields = ['id', 'sku']
+
+class VendorProductImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductImage
+        fields = ['id', 'product', 'variant', 'url', 'alt_text', 'caption', 'is_primary']
+        read_only_fields = ['id']
+
+    def validate(self, attrs):
+        product = attrs.get('product')
+        variant = attrs.get('variant')
+        if variant and variant.product_id != product.id:
+            raise serializers.ValidationError("Variant must belong to the product.")
+        return attrs
+
+class VendorProductSpecificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductSpecification
+        fields = ['id', 'product', 'specification', 'value']
+        read_only_fields = ['id']
+
+class VendorVariantSpecificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VariantSpecification
+        fields = ['id', 'variant', 'specification', 'value']
+        read_only_fields = ['id']
