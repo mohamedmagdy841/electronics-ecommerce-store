@@ -12,8 +12,8 @@ urlpatterns = [
     path("<slug:slug>/", views.ProductDetailAPIView.as_view()),
     path("related/<slug:slug>/", views.RelatedProductListAPIView.as_view()),
     
-    path("reviews/<int:pk>/", views.ProductReviewDetailAPIView.as_view()),
-    path("reviews/<slug:slug>/", views.ProductReviewListAPIView.as_view()),
+    path("<slug:slug>/review/<int:pk>/", views.ProductReviewDetailAPIView.as_view()),
+    path("<slug:slug>/reviews/", views.ProductReviewListAPIView.as_view()),
     
 ] + debug_toolbar_urls()
 

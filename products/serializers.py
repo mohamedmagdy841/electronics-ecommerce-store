@@ -169,7 +169,7 @@ class ProductReviewSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         request = self.context["request"]
         product = self.context["product"]
-        parent = attrs.get("parent")
+        parent = attrs.get("parent", getattr(self.instance, "parent", None))
         
         # If replying
         if parent:
@@ -191,8 +191,15 @@ class ProductReviewSerializer(serializers.ModelSerializer):
             if attrs.get("rating") is None:
                 raise serializers.ValidationError("Rating is required for a review.")
 
-            # Stops duplicate top-level reviews from the same user
-            if ProductReview.objects.filter(user=request.user, product=product, parent__isnull=True).exists():
+            qs = ProductReview.objects.filter(
+                user=request.user,
+                product=product,
+                parent__isnull=True
+            )
+            if self.instance:
+                qs = qs.exclude(pk=self.instance.pk)
+
+            if qs.exists():
                 raise serializers.ValidationError("You have already reviewed this product.")
         return attrs
     

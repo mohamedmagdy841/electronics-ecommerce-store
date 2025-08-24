@@ -325,9 +325,34 @@ class ProductReviewListAPIView(generics.ListCreateAPIView):
     summary="Retrieve/Update/Delete a review",
 )
 class ProductReviewDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = ProductReview.objects.select_related("user", "product")
     serializer_class = ProductReviewSerializer
     permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+    
+    @cached_property
+    def product(self):
+        try:
+            return Product.objects.get(slug=self.kwargs["slug"])
+        except Product.DoesNotExist:
+            raise NotFound("Product not found.")
+        
+    def get_queryset(self):
+        product = self.product
+        return (
+            ProductReview.objects
+            .filter(product=product)
+            .select_related('user', 'product')
+            .prefetch_related(
+                Prefetch(
+                    'replies',
+                    queryset=ProductReview.objects.select_related('user').order_by('created_at', 'id')
+                )
+            )
+        )
+        
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["product"] = self.product
+        return context
 
 
 # --------------- Vendor ----------------------
