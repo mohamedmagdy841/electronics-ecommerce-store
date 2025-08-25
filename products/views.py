@@ -22,6 +22,7 @@ from .serializers import (
     VendorProductVariantSerializer,
     VendorVariantSpecificationSerializer,
     VendorCategorySerializer,
+    VendorBrandSerializer,
 )
 from .pagination import CustomProductPagination, RelatedLimitOffset, ReviewCursorPagination
 from django.core.cache import cache
@@ -503,3 +504,9 @@ class VendorCategoryViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Category.objects.filter(vendor=self.request.user).prefetch_related('children')
 
+class VendorBrandViewSet(viewsets.ModelViewSet):
+    serializer_class = VendorBrandSerializer
+    permission_classes = [IsAuthenticated, IsVendor]
+
+    def get_queryset(self):
+        return Brand.objects.filter(vendor=self.request.user)

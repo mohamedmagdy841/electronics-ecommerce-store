@@ -306,10 +306,14 @@ class VendorCategorySerializer(serializers.ModelSerializer):
         request = self.context['request']
         validated_data['vendor'] = request.user
         return super().create(validated_data)
+    
+class VendorBrandSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Brand
+        fields = ['id', 'name', 'slug']
 
-    def update(self, instance, validated_data):
+    def create(self, validated_data):
         request = self.context['request']
-        parent = validated_data.get("parent")
-        if parent and parent.vendor != request.user:
-            raise serializers.ValidationError("Parent category must belong to you.")
-        return super().update(instance, validated_data)
+        validated_data['vendor'] = request.user
+        return super().create(validated_data)
+
