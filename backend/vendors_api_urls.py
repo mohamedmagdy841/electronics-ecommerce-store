@@ -12,12 +12,14 @@ from products.views import (
     VendorProductImageListCreateView,
     VendorProductImageDetailView,
     VendorVariantImageListCreateView,
-    VendorVariantImageDetailView
+    VendorVariantImageDetailView,
+    VendorCategoryViewSet,
 )
 
 # Products
 router = DefaultRouter()
 router.register(r'products', VendorProductViewSet, basename='vendor-products')
+router.register(r'categories', VendorCategoryViewSet, basename='vendor-categories')
 
 
 

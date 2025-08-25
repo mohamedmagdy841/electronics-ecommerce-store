@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.utils.text import slugify
-from django.db.models import Q
+from django.db.models import Q, ForeignKey
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from backend.utils import (
@@ -19,6 +19,12 @@ class Category(models.Model):
         null=True,
         blank=True,
         help_text="Leave blank for top-level categories."
+    )
+    vendor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="categories",
+        help_text="Vendor who owns this category."
     )
     name = models.CharField(max_length=50, unique=True)
     slug = models.SlugField(max_length=100, unique=True, db_index=True)

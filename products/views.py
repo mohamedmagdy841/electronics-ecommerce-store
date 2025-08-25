@@ -8,7 +8,7 @@ from .permissions import IsOwnerOrReadOnly, IsVendor, IsVendorOwner
 from .models import (
     Brand, Product, Category, ProductImage,
     ProductReview, ProductSpecification,
-    ProductVariant, VariantSpecification
+    ProductVariant, VariantSpecification,
 )
 from .serializers import (
     ProductReviewSerializer,
@@ -20,14 +20,15 @@ from .serializers import (
     VendorProductSerializer,
     VendorProductSpecificationSerializer,
     VendorProductVariantSerializer,
-    VendorVariantSpecificationSerializer
+    VendorVariantSpecificationSerializer,
+    VendorCategorySerializer,
 )
 from .pagination import CustomProductPagination, RelatedLimitOffset, ReviewCursorPagination
 from django.core.cache import cache
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import ProductFilter
 from rest_framework import filters
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, PermissionDenied
 from django.utils.functional import cached_property
 from rest_framework.parsers import MultiPartParser, FormParser
 
@@ -356,6 +357,7 @@ class ProductReviewDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 # --------------- Vendor ----------------------
+# Products
 class VendorProductViewSet(viewsets.ModelViewSet):
     serializer_class = VendorProductSerializer
     permission_classes = [IsVendor, IsVendorOwner]
@@ -492,3 +494,12 @@ class VendorVariantImageDetailView(generics.RetrieveUpdateDestroyAPIView):
         context["product"] = self.product
         context["variant"] = self.variant
         return context
+
+# Category
+class VendorCategoryViewSet(viewsets.ModelViewSet):
+    serializer_class = VendorCategorySerializer
+    permission_classes = [IsVendor]
+    
+    def get_queryset(self):
+        return Category.objects.filter(vendor=self.request.user).prefetch_related('children')
+

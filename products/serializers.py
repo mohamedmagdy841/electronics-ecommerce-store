@@ -213,7 +213,7 @@ class ProductReviewSerializer(serializers.ModelSerializer):
         )
 
 # ----------Vendor----------
-
+# Products
 class VendorProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
@@ -284,3 +284,32 @@ class VendorVariantSpecificationSerializer(serializers.ModelSerializer):
         model = VariantSpecification
         fields = ['id', 'variant', 'specification', 'value']
         read_only_fields = ['id']
+
+# Category
+class VendorCategorySerializer(serializers.ModelSerializer):
+    parent = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(), required=False, allow_null=True
+    )
+    children = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'slug', 'parent', 'children']
+
+    def validate_parent(self, value):
+        request = self.context['request']
+        if value and value.vendor != request.user:
+            raise serializers.ValidationError("Parent category must belong to you.")
+        return value
+
+    def create(self, validated_data):
+        request = self.context['request']
+        validated_data['vendor'] = request.user
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        request = self.context['request']
+        parent = validated_data.get("parent")
+        if parent and parent.vendor != request.user:
+            raise serializers.ValidationError("Parent category must belong to you.")
+        return super().update(instance, validated_data)
