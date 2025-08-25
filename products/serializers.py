@@ -42,7 +42,6 @@ class ProductSpecificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductSpecification
         fields = ['specification', 'value']
-
         
 class VariantSpecificationSerializer(serializers.ModelSerializer):
     specification = serializers.StringRelatedField()
@@ -276,8 +275,12 @@ class VendorProductImageSerializer(serializers.ModelSerializer):
 class VendorProductSpecificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductSpecification
-        fields = ['id', 'product', 'specification', 'value']
+        fields = ['id', 'specification', 'value']
         read_only_fields = ['id']
+    
+    def create(self, validated_data):
+        product = self.context["product"]
+        return ProductSpecification.objects.create(product=product, **validated_data)
 
 class VendorVariantSpecificationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -306,14 +309,6 @@ class VendorCategorySerializer(serializers.ModelSerializer):
         request = self.context['request']
         validated_data['vendor'] = request.user
         return super().create(validated_data)
-    
-class VendorBrandSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Brand
-        fields = ['id', 'name', 'slug']
 
-    def create(self, validated_data):
-        request = self.context['request']
-        validated_data['vendor'] = request.user
-        return super().create(validated_data)
+
 

@@ -14,15 +14,14 @@ from products.views import (
     VendorVariantImageListCreateView,
     VendorVariantImageDetailView,
     VendorCategoryViewSet,
-    VendorBrandViewSet,
+    VendorProductSpecificationListCreateView,
+    VendorProductSpecificationDetailView
 )
 
 # Products
 router = DefaultRouter()
 router.register(r'products', VendorProductViewSet, basename='vendor-products')
 router.register(r'categories', VendorCategoryViewSet, basename='vendor-categories')
-router.register(r'brands', VendorBrandViewSet, basename='vendor-brands')
-
 
 
 urlpatterns = [
@@ -32,6 +31,7 @@ urlpatterns = [
     
     path("products/<slug:slug>/variants/", VendorProductVariantListCreateView.as_view()),
     path("products/<slug:slug>/variants/<int:pk>/", VendorProductVariantRetrieveUpdateDestroyView.as_view()),
+    
     # Product images
     path("products/<slug:slug>/images/", VendorProductImageListCreateView.as_view()),
     path("products/<slug:slug>/images/<int:pk>/", VendorProductImageDetailView.as_view()),
@@ -39,6 +39,10 @@ urlpatterns = [
     # Variant images
     path("products/<slug:slug>/variants/<int:variant_id>/images/", VendorVariantImageListCreateView.as_view()),
     path("products/<slug:slug>/variants/<int:variant_id>/images/<int:pk>/", VendorVariantImageDetailView.as_view()),
+    
+    # Product specs
+    path("products/<slug:slug>/specs/", VendorProductSpecificationListCreateView.as_view()),
+    path("products/<slug:slug>/specs/<int:pk>/", VendorProductSpecificationDetailView.as_view()),
     
 ]
 urlpatterns += router.urls

@@ -22,7 +22,6 @@ from .serializers import (
     VendorProductVariantSerializer,
     VendorVariantSpecificationSerializer,
     VendorCategorySerializer,
-    VendorBrandSerializer,
 )
 from .pagination import CustomProductPagination, RelatedLimitOffset, ReviewCursorPagination
 from django.core.cache import cache
@@ -366,7 +365,6 @@ class VendorProductViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Product.objects.filter(vendor=self.request.user)
 
-
 class VendorProductVariantListCreateView(generics.ListCreateAPIView):
     serializer_class = VendorProductVariantSerializer
     permission_classes = [IsVendor, IsVendorOwner]
@@ -422,7 +420,6 @@ class VendorProductImageListCreateView(generics.ListCreateAPIView):
         context["product"] = self.product
         return context
 
-
 class VendorProductImageDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = VendorProductImageSerializer
     permission_classes = [IsVendor, IsVendorOwner]
@@ -439,7 +436,6 @@ class VendorProductImageDetailView(generics.RetrieveUpdateDestroyAPIView):
         context = super().get_serializer_context()
         context["product"] = self.product
         return context
-
 
 class VendorVariantImageListCreateView(generics.ListCreateAPIView):
     serializer_class = VendorProductImageSerializer
@@ -470,7 +466,6 @@ class VendorVariantImageListCreateView(generics.ListCreateAPIView):
         context["variant"] = self.variant
         return context
 
-
 class VendorVariantImageDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = VendorProductImageSerializer
     permission_classes = [IsVendor, IsVendorOwner]
@@ -496,6 +491,38 @@ class VendorVariantImageDetailView(generics.RetrieveUpdateDestroyAPIView):
         context["variant"] = self.variant
         return context
 
+class VendorProductSpecificationListCreateView(generics.ListCreateAPIView):
+    serializer_class = VendorProductSpecificationSerializer
+    permission_classes = [IsVendor, IsVendorOwner]
+    
+    @cached_property
+    def product(self):
+        return get_object_or_404(Product, slug=self.kwargs["slug"], vendor=self.request.user)
+
+    def get_queryset(self):
+        return ProductSpecification.objects.filter(product=self.product)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["product"] = self.product
+        return context
+    
+class VendorProductSpecificationDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = VendorProductSpecificationSerializer
+    permission_classes = [IsVendor, IsVendorOwner]
+    
+    @cached_property
+    def product(self):
+        return get_object_or_404(Product, slug=self.kwargs["slug"], vendor=self.request.user)
+
+    def get_queryset(self):
+        return ProductSpecification.objects.filter(product=self.product)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["product"] = self.product
+        return context
+    
 # Category
 class VendorCategoryViewSet(viewsets.ModelViewSet):
     serializer_class = VendorCategorySerializer
@@ -504,9 +531,3 @@ class VendorCategoryViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Category.objects.filter(vendor=self.request.user).prefetch_related('children')
 
-class VendorBrandViewSet(viewsets.ModelViewSet):
-    serializer_class = VendorBrandSerializer
-    permission_classes = [IsAuthenticated, IsVendor]
-
-    def get_queryset(self):
-        return Brand.objects.filter(vendor=self.request.user)
