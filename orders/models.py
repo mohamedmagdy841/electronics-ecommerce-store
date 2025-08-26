@@ -139,7 +139,6 @@ class Coupon(models.Model):
 
         return coupon.calculate_discount(subtotal)
 
-
 class Order(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
@@ -181,8 +180,6 @@ class Order(models.Model):
     def grand_total(self):
         return self.subtotal - self.discount_amount + self.total_tax
 
-
-
 class OrderItem(models.Model):
     order = models.ForeignKey(
         Order,
@@ -207,7 +204,6 @@ class OrderItem(models.Model):
     @property
     def total_price(self):
         return self.unit_price * self.quantity
-
 
 class Payment(models.Model):
     METHOD_CHOICES = [

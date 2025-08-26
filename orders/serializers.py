@@ -1,5 +1,7 @@
+from decimal import Decimal
 from rest_framework import serializers
 from cart.models import CartItem
+from products.models import Tax
 from .services.order_service import create_order
 from .models import ShippingAddress, Coupon, Order, OrderItem, Payment, Invoice
 from accounts.serializers import CustomUserSerializer
@@ -175,6 +177,10 @@ class VendorOrderItemSerializer(serializers.ModelSerializer):
 
 class VendorOrderSerializer(serializers.ModelSerializer):
     items = serializers.SerializerMethodField()
+    vendor_subtotal = serializers.SerializerMethodField()
+    vendor_discount_amount = serializers.SerializerMethodField()
+    vendor_tax = serializers.SerializerMethodField()
+    vendor_total = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -183,11 +189,12 @@ class VendorOrderSerializer(serializers.ModelSerializer):
             "user",
             "shipping_address",
             "status",
-            "discount_amount",
-            "total_tax",
-            "total_price",
             "coupon_code",
             "created_at",
+            "vendor_subtotal",
+            "vendor_discount_amount",
+            "vendor_tax",
+            "vendor_total",
             "items",
         ]
 
@@ -195,3 +202,36 @@ class VendorOrderSerializer(serializers.ModelSerializer):
         vendor = self.context["request"].user
         qs = obj.items.filter(vendor=vendor)
         return VendorOrderItemSerializer(qs, many=True).data
+
+    def get_vendor_subtotal(self, obj):
+        vendor = self.context["request"].user
+        qs = obj.items.filter(vendor=vendor)
+        return sum(item.unit_price * item.quantity for item in qs)
+
+    def get_vendor_discount_amount(self, obj):
+        vendor_subtotal = self.get_vendor_subtotal(obj)
+
+        order_subtotal = obj.subtotal
+        if order_subtotal == 0 or obj.discount_amount == 0:
+            return 0
+
+        return (vendor_subtotal / order_subtotal) * obj.discount_amount
+
+    def get_vendor_tax(self, obj):
+        vendor_subtotal = self.get_vendor_subtotal(obj)
+        vendor_discount = self.get_vendor_discount_amount(obj)
+
+        taxable_amount = vendor_subtotal - vendor_discount
+        tax_amount = Decimal("0")
+
+        for tax in Tax.objects.filter(is_active=True):
+            tax_amount += tax.calculate_tax(taxable_amount)
+
+        return tax_amount
+
+    def get_vendor_total(self, obj):
+        vendor_subtotal = self.get_vendor_subtotal(obj)
+        vendor_discount = self.get_vendor_discount_amount(obj)
+        vendor_tax = self.get_vendor_tax(obj)
+        return vendor_subtotal - vendor_discount + vendor_tax
+
