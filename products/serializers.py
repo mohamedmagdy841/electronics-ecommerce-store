@@ -285,8 +285,12 @@ class VendorProductSpecificationSerializer(serializers.ModelSerializer):
 class VendorVariantSpecificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = VariantSpecification
-        fields = ['id', 'variant', 'specification', 'value']
+        fields = ['id', 'specification', 'value']
         read_only_fields = ['id']
+        
+    def create(self, validated_data):
+        variant = self.context["variant"]
+        return VariantSpecification.objects.create(variant=variant, **validated_data)
 
 # Category
 class VendorCategorySerializer(serializers.ModelSerializer):

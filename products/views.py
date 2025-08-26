@@ -523,6 +523,38 @@ class VendorProductSpecificationDetailView(generics.RetrieveUpdateDestroyAPIView
         context["product"] = self.product
         return context
     
+class VendorVariantSpecificationListCreateView(generics.ListCreateAPIView):
+    serializer_class = VendorVariantSpecificationSerializer
+    permission_classes = [IsVendor, IsVendorOwner]
+    
+    @cached_property
+    def variant(self):
+        return get_object_or_404(ProductVariant, sku=self.kwargs["sku"], product__vendor=self.request.user)
+
+    def get_queryset(self):
+        return VariantSpecification.objects.filter(variant=self.variant)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["variant"] = self.variant
+        return context
+    
+class VendorVariantSpecificationDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = VendorVariantSpecificationSerializer
+    permission_classes = [IsVendor, IsVendorOwner]
+    
+    @cached_property
+    def variant(self):
+        return get_object_or_404(ProductVariant, sku=self.kwargs["sku"], product__vendor=self.request.user)
+
+    def get_queryset(self):
+        return VariantSpecification.objects.filter(variant=self.variant)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["variant"] = self.variant
+        return context
+    
 # Category
 class VendorCategoryViewSet(viewsets.ModelViewSet):
     serializer_class = VendorCategorySerializer
