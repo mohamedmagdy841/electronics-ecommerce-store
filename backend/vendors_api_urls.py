@@ -17,7 +17,10 @@ from products.views import (
     VendorProductSpecificationListCreateView,
     VendorProductSpecificationDetailView,
     VendorVariantSpecificationListCreateView,
-    VendorVariantSpecificationDetailView
+    VendorVariantSpecificationDetailView,
+)
+from orders.views import (
+    VendorOrderListView, VendorOrderDetailView
 )
 
 # Products
@@ -50,5 +53,8 @@ urlpatterns = [
     path("variants/<str:sku>/specs/", VendorVariantSpecificationListCreateView.as_view()),
     path("variants/<str:sku>/specs/<int:pk>/", VendorVariantSpecificationDetailView.as_view()),
     
+    # Order and Order Item
+    path("orders/", VendorOrderListView.as_view()),
+    path("orders/<int:pk>/", VendorOrderDetailView.as_view()),
 ]
 urlpatterns += router.urls

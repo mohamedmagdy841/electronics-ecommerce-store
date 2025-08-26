@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.utils.text import slugify
-from django.db.models import Q, ForeignKey
+from django.db.models import Q
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from backend.utils import (

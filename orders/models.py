@@ -193,6 +193,11 @@ class OrderItem(models.Model):
         ProductVariant,
         on_delete=models.PROTECT
     )
+    vendor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='order_items'
+    )
     quantity = models.PositiveIntegerField()
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
 

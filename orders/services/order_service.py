@@ -43,6 +43,7 @@ def create_order(user, shipping_address, coupon_code=None, payment_method='cod')
             OrderItem(
                 order=order,
                 variant=item.variant,
+                vendor=item.variant.product.vendor,
                 quantity=item.quantity,
                 unit_price=item.variant.discounted_price or item.variant.price
             )

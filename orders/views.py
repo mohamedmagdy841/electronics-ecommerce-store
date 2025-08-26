@@ -1,5 +1,8 @@
 from django.db import transaction
-from rest_framework.generics import CreateAPIView, ListCreateAPIView, RetrieveAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
+from rest_framework.generics import (
+    CreateAPIView, ListCreateAPIView, RetrieveAPIView,
+    RetrieveUpdateDestroyAPIView, ListAPIView
+)
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -7,7 +10,12 @@ from rest_framework.response import Response
 from orders.services.invoice_service import create_internal_invoice
 
 from .models import Invoice, Order, OrderItem, Payment, ShippingAddress, Coupon
-from .serializers import CreateOrderSerializer, InvoiceDisplaySerializer, OrderItemSerializer, OrderSerializer, PaymentSerializer, ShippingAddressSerializer, CouponSerializer
+from .serializers import (
+    CreateOrderSerializer, InvoiceDisplaySerializer,
+    OrderItemSerializer, OrderSerializer, CouponSerializer,
+    PaymentSerializer, ShippingAddressSerializer,
+    VendorOrderSerializer,
+)
 from .services.payments.resolver import PaymentGatewayResolver
 
 from drf_spectacular.utils import (
@@ -18,6 +26,7 @@ from drf_spectacular.utils import (
     OpenApiParameter,
     OpenApiTypes,
 )
+from products.permissions import IsVendor
 
 # -------- Shipping Addresses --------
 @extend_schema_view(
@@ -339,3 +348,37 @@ class InvoiceDetailView(RetrieveAPIView):
                                   'order__items__variant',
                                   'order__items__variant__product')
                 )
+
+
+# ---------VENDOR -----------
+# Orders
+class VendorOrderListView(ListAPIView):
+    serializer_class = VendorOrderSerializer
+    permission_classes = [IsVendor]
+
+    def get_queryset(self):
+        vendor = self.request.user
+        return (
+            Order.objects.filter(items__vendor=vendor)
+            .distinct()
+            .order_by("-created_at")
+        )
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["request"] = self.request
+        return context
+
+
+class VendorOrderDetailView(RetrieveAPIView):
+    serializer_class = VendorOrderSerializer
+    permission_classes = [IsVendor]
+
+    def get_queryset(self):
+        vendor = self.request.user
+        return Order.objects.filter(items__vendor=vendor).distinct()
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["request"] = self.request
+        return context

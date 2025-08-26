@@ -54,8 +54,6 @@ class CouponSerializer(serializers.ModelSerializer):
             )
         return attrs
     
-    
-
 class OrderItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='variant.product.name', read_only=True)
     sku = serializers.CharField(source='variant.sku', read_only=True)
@@ -68,7 +66,6 @@ class OrderItemSerializer(serializers.ModelSerializer):
         fields = ['id', 'variant', 'product_name', 'sku', 'quantity', 'unit_price', 'total_price']
         read_only_fields = ['unit_price', 'total_price', 'product_name', 'sku']
 
-
 class PaymentSerializer(serializers.ModelSerializer):
     is_paid = serializers.BooleanField(read_only=True)
     method = serializers.SerializerMethodField()
@@ -80,7 +77,6 @@ class PaymentSerializer(serializers.ModelSerializer):
         
     def get_method(self, obj):
         return obj.get_method_display().upper()
-
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
@@ -136,7 +132,6 @@ class CreateOrderSerializer(serializers.ModelSerializer):
             order_data['payment_action'] = payment_data
         return order_data
 
-
 class InvoiceDisplaySerializer(serializers.ModelSerializer):
     order_id = serializers.IntegerField(source="order.id", read_only=True)
     user = serializers.CharField(source="order.user.email", read_only=True)
@@ -159,3 +154,44 @@ class InvoiceDisplaySerializer(serializers.ModelSerializer):
             "total",
             "items",
         ]
+
+# ---------- VENDOR ----------
+class VendorOrderItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source="variant.product.name", read_only=True)
+    sku = serializers.CharField(source="variant.sku", read_only=True)
+
+    class Meta:
+        model = OrderItem
+        fields = [
+            "id",
+            "order",
+            "sku",
+            "product_name",
+            "quantity",
+            "unit_price",
+            "total_price",
+        ]
+
+
+class VendorOrderSerializer(serializers.ModelSerializer):
+    items = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Order
+        fields = [
+            "id",
+            "user",
+            "shipping_address",
+            "status",
+            "discount_amount",
+            "total_tax",
+            "total_price",
+            "coupon_code",
+            "created_at",
+            "items",
+        ]
+
+    def get_items(self, obj):
+        vendor = self.context["request"].user
+        qs = obj.items.filter(vendor=vendor)
+        return VendorOrderItemSerializer(qs, many=True).data
