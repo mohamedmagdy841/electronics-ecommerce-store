@@ -3,7 +3,7 @@ from django.urls import path, re_path
 from .views import (
     ShippingAddressListCreate,
     ShippingAddressDetail,
-    CouponListCreateView,
+    CouponListView,
     CouponDetailView,
     PublicCouponListView,
     OrderListView,
@@ -21,7 +21,7 @@ urlpatterns = [
     path("shipping-addresses/<int:pk>/", ShippingAddressDetail.as_view()),
     
     # Coupons
-    path("coupons/", CouponListCreateView.as_view()),
+    path("coupons/", CouponListView.as_view()),
     path("coupons/<int:pk>/", CouponDetailView.as_view()),
     path("public/coupons/", PublicCouponListView.as_view()),
     

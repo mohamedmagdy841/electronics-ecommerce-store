@@ -44,17 +44,6 @@ class CouponSerializer(serializers.ModelSerializer):
     class Meta:
         model = Coupon
         fields = "__all__"
-
-    def validate(self, attrs):
-        if (
-            attrs.get("discount_type") == Coupon.DiscountType.PERCENT
-            and attrs.get("value") is not None
-            and attrs["value"] > 100
-        ):
-            raise serializers.ValidationError(
-                {"value": "Percent value cannot exceed 100."}
-            )
-        return attrs
     
 class OrderItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='variant.product.name', read_only=True)
@@ -236,7 +225,6 @@ class VendorOrderSerializer(serializers.ModelSerializer):
         return vendor_subtotal - vendor_discount + vendor_tax
 
 # Payment
-
 class VendorPaymentSerializer(serializers.ModelSerializer):
     order = serializers.SerializerMethodField()
     vendor_amount = serializers.SerializerMethodField()

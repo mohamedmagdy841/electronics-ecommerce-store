@@ -100,14 +100,8 @@ class ShippingAddressDetail(RetrieveUpdateDestroyAPIView):
         summary="List coupons (Admin only)",
         responses=CouponSerializer,
     ),
-    post=extend_schema(
-        tags=["Coupons"],
-        summary="Create coupon (Admin only)",
-        request=CouponSerializer,
-        responses={201: CouponSerializer},
-    ),
 )
-class CouponListCreateView(ListCreateAPIView):
+class CouponListView(ListAPIView):
     queryset = Coupon.objects.all()
     serializer_class = CouponSerializer
     permission_classes = [IsAdminUser]
@@ -119,19 +113,8 @@ class CouponListCreateView(ListCreateAPIView):
         parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
         responses=CouponSerializer,
     ),
-    put=extend_schema(
-        tags=["Coupons"],
-        summary="Update coupon (Admin only)",
-        request=CouponSerializer,
-        responses=CouponSerializer,
-    ),
-    delete=extend_schema(
-        tags=["Coupons"],
-        summary="Delete coupon (Admin only)",
-        responses={204: OpenApiResponse(description="Deleted")},
-    ),
 )
-class CouponDetailView(RetrieveUpdateDestroyAPIView):
+class CouponDetailView(RetrieveAPIView):
     queryset = Coupon.objects.all()
     serializer_class = CouponSerializer
     permission_classes = [IsAdminUser]
@@ -399,7 +382,6 @@ class VendorPaymentListView(ListAPIView):
         context = super().get_serializer_context()
         context["request"] = self.request
         return context
-
 
 class VendorPaymentDetailView(RetrieveAPIView):
     serializer_class = VendorPaymentSerializer
