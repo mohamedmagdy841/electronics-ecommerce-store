@@ -158,6 +158,7 @@ class InvoiceDisplaySerializer(serializers.ModelSerializer):
         ]
 
 # ---------- VENDOR ----------
+# Order
 class VendorOrderItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source="variant.product.name", read_only=True)
     sku = serializers.CharField(source="variant.sku", read_only=True)
@@ -173,7 +174,6 @@ class VendorOrderItemSerializer(serializers.ModelSerializer):
             "unit_price",
             "total_price",
         ]
-
 
 class VendorOrderSerializer(serializers.ModelSerializer):
     items = serializers.SerializerMethodField()
@@ -235,3 +235,30 @@ class VendorOrderSerializer(serializers.ModelSerializer):
         vendor_tax = self.get_vendor_tax(obj)
         return vendor_subtotal - vendor_discount + vendor_tax
 
+# Payment
+
+class VendorPaymentSerializer(serializers.ModelSerializer):
+    order = serializers.SerializerMethodField()
+    vendor_amount = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Payment
+        fields = [
+            "id",
+            "order",
+            "method",
+            "provider",
+            "vendor_amount",
+            "amount",
+            "status",
+            "gateway_order_id",
+            "transaction_id",
+            "created_at",
+        ]
+
+    def get_order(self, obj):
+        return VendorOrderSerializer(obj.order, context=self.context).data
+    
+    def get_vendor_amount(self, obj):
+        vendor_order = VendorOrderSerializer(obj.order, context=self.context)
+        return vendor_order.data.get("vendor_total", 0)

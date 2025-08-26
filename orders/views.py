@@ -14,7 +14,7 @@ from .serializers import (
     CreateOrderSerializer, InvoiceDisplaySerializer,
     OrderItemSerializer, OrderSerializer, CouponSerializer,
     PaymentSerializer, ShippingAddressSerializer,
-    VendorOrderSerializer,
+    VendorOrderSerializer, VendorPaymentSerializer,
 )
 from .services.payments.resolver import PaymentGatewayResolver
 
@@ -369,7 +369,6 @@ class VendorOrderListView(ListAPIView):
         context["request"] = self.request
         return context
 
-
 class VendorOrderDetailView(RetrieveAPIView):
     serializer_class = VendorOrderSerializer
     permission_classes = [IsVendor]
@@ -377,6 +376,38 @@ class VendorOrderDetailView(RetrieveAPIView):
     def get_queryset(self):
         vendor = self.request.user
         return Order.objects.filter(items__vendor=vendor).distinct()
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["request"] = self.request
+        return context
+
+# Payments
+class VendorPaymentListView(ListAPIView):
+    serializer_class = VendorPaymentSerializer
+    permission_classes = [IsVendor]
+
+    def get_queryset(self):
+        vendor = self.request.user
+        return (
+            Payment.objects.filter(order__items__vendor=vendor)
+            .distinct()
+            .order_by("-created_at")
+        )
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["request"] = self.request
+        return context
+
+
+class VendorPaymentDetailView(RetrieveAPIView):
+    serializer_class = VendorPaymentSerializer
+    permission_classes = [IsVendor]
+
+    def get_queryset(self):
+        vendor = self.request.user
+        return Payment.objects.filter(order__items__vendor=vendor).distinct()
 
     def get_serializer_context(self):
         context = super().get_serializer_context()

@@ -20,7 +20,8 @@ from products.views import (
     VendorVariantSpecificationDetailView,
 )
 from orders.views import (
-    VendorOrderListView, VendorOrderDetailView
+    VendorOrderListView, VendorOrderDetailView,
+    VendorPaymentListView, VendorPaymentDetailView
 )
 
 # Products
@@ -56,5 +57,9 @@ urlpatterns = [
     # Order and Order Item
     path("orders/", VendorOrderListView.as_view()),
     path("orders/<int:pk>/", VendorOrderDetailView.as_view()),
+    
+    # Payment
+    path("payments/", VendorPaymentListView.as_view(), name="vendor-payments"),
+    path("payments/<int:pk>/", VendorPaymentDetailView.as_view(), name="vendor-payment-detail"),
 ]
 urlpatterns += router.urls
