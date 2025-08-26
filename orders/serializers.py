@@ -5,6 +5,7 @@ from products.models import Tax
 from .services.order_service import create_order
 from .models import ShippingAddress, Coupon, Order, OrderItem, Payment, Invoice
 from accounts.serializers import CustomUserSerializer
+from .mixins import VendorOrderTotalsMixin
 
 class ShippingAddressSerializer(serializers.ModelSerializer):
     country_name = serializers.CharField(source='country.name', read_only=True)
@@ -250,3 +251,43 @@ class VendorPaymentSerializer(serializers.ModelSerializer):
     def get_vendor_amount(self, obj):
         vendor_order = VendorOrderSerializer(obj.order, context=self.context)
         return vendor_order.data.get("vendor_total", 0)
+
+# Invoice
+class VendorInvoiceSerializer(VendorOrderTotalsMixin, serializers.ModelSerializer):
+    order = serializers.SerializerMethodField()
+    vendor_subtotal = serializers.SerializerMethodField()
+    vendor_discount = serializers.SerializerMethodField()
+    vendor_tax = serializers.SerializerMethodField()
+    vendor_total = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Invoice
+        fields = [
+            "id",
+            "invoice_number",
+            "status",
+            "billing_address",
+            "issued_at",
+            "due_date",
+            "vendor_subtotal",
+            "vendor_discount",
+            "vendor_tax",
+            "vendor_total",
+            "order",
+        ]
+
+    def get_order(self, obj):
+        return VendorOrderSerializer(obj.order, context=self.context).data
+
+    def get_vendor_subtotal(self, obj):
+        return self.calculate_vendor_subtotal(obj.order)
+
+    def get_vendor_discount(self, obj):
+        return self.calculate_vendor_discount(obj.order)
+
+    def get_vendor_tax(self, obj):
+        return self.calculate_vendor_tax(obj.order)
+
+    def get_vendor_total(self, obj):
+        return self.calculate_vendor_total(obj.order)
+
