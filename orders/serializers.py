@@ -165,7 +165,7 @@ class VendorOrderItemSerializer(serializers.ModelSerializer):
             "total_price",
         ]
 
-class VendorOrderSerializer(serializers.ModelSerializer):
+class VendorOrderSerializer(VendorOrderTotalsMixin, serializers.ModelSerializer):
     items = serializers.SerializerMethodField()
     vendor_subtotal = serializers.SerializerMethodField()
     vendor_discount_amount = serializers.SerializerMethodField()
@@ -194,39 +194,19 @@ class VendorOrderSerializer(serializers.ModelSerializer):
         return VendorOrderItemSerializer(qs, many=True).data
 
     def get_vendor_subtotal(self, obj):
-        vendor = self.context["request"].user
-        qs = obj.items.filter(vendor=vendor)
-        return sum(item.unit_price * item.quantity for item in qs)
+        return self.calculate_vendor_subtotal(obj)
 
     def get_vendor_discount_amount(self, obj):
-        vendor_subtotal = self.get_vendor_subtotal(obj)
-
-        order_subtotal = obj.subtotal
-        if order_subtotal == 0 or obj.discount_amount == 0:
-            return 0
-
-        return (vendor_subtotal / order_subtotal) * obj.discount_amount
+        return self.calculate_vendor_discount(obj)
 
     def get_vendor_tax(self, obj):
-        vendor_subtotal = self.get_vendor_subtotal(obj)
-        vendor_discount = self.get_vendor_discount_amount(obj)
-
-        taxable_amount = vendor_subtotal - vendor_discount
-        tax_amount = Decimal("0")
-
-        for tax in Tax.objects.filter(is_active=True):
-            tax_amount += tax.calculate_tax(taxable_amount)
-
-        return tax_amount
+        return self.calculate_vendor_tax(obj)
 
     def get_vendor_total(self, obj):
-        vendor_subtotal = self.get_vendor_subtotal(obj)
-        vendor_discount = self.get_vendor_discount_amount(obj)
-        vendor_tax = self.get_vendor_tax(obj)
-        return vendor_subtotal - vendor_discount + vendor_tax
+        return self.calculate_vendor_total(obj)
 
 # Payment
-class VendorPaymentSerializer(serializers.ModelSerializer):
+class VendorPaymentSerializer(VendorOrderTotalsMixin, serializers.ModelSerializer):
     order = serializers.SerializerMethodField()
     vendor_amount = serializers.SerializerMethodField()
 
@@ -249,8 +229,7 @@ class VendorPaymentSerializer(serializers.ModelSerializer):
         return VendorOrderSerializer(obj.order, context=self.context).data
     
     def get_vendor_amount(self, obj):
-        vendor_order = VendorOrderSerializer(obj.order, context=self.context)
-        return vendor_order.data.get("vendor_total", 0)
+        return self.calculate_vendor_total(obj.order)
 
 # Invoice
 class VendorInvoiceSerializer(VendorOrderTotalsMixin, serializers.ModelSerializer):
