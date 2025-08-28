@@ -1,9 +1,6 @@
-from products.models import Tax
-
 class VendorOrderTotalsMixin:
     def _vendor_items(self, order):
-        vendor = self.context["request"].user
-        return order.items.filter(vendor=vendor)
+        return getattr(order, "vendor_items", [])
 
     def calculate_vendor_subtotal(self, order):
         return sum(item.unit_price * item.quantity for item in self._vendor_items(order))
@@ -16,7 +13,7 @@ class VendorOrderTotalsMixin:
         discount = self.calculate_vendor_discount(order)
         taxable_amount = subtotal - discount
         tax_amount = 0
-        for tax in Tax.objects.filter(is_active=True):
+        for tax in self.context["active_taxes"]:
             tax_amount += tax.calculate_tax(taxable_amount)
         return tax_amount
 

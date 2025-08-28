@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from orders.services.invoice_service import create_internal_invoice
+from products.models import Tax
 
 from .models import Invoice, Order, OrderItem, Payment, ShippingAddress, Coupon
 from .serializers import (
@@ -28,6 +29,8 @@ from drf_spectacular.utils import (
     OpenApiTypes,
 )
 from products.permissions import IsVendor
+from products.pagination import CustomPagination
+from django.db.models import Prefetch
 
 # -------- Shipping Addresses --------
 @extend_schema_view(
@@ -339,11 +342,21 @@ class InvoiceDetailView(RetrieveAPIView):
 class VendorOrderListView(ListAPIView):
     serializer_class = VendorOrderSerializer
     permission_classes = [IsVendor]
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         vendor = self.request.user
+        
+        vendor_items = OrderItem.objects.filter(vendor=vendor).select_related(
+                "variant",
+                "variant__product",
+                "vendor"
+            )
+                
         return (
             Order.objects.filter(items__vendor=vendor)
+            .select_related("user", "shipping_address") 
+            .prefetch_related(Prefetch("items", queryset=vendor_items, to_attr="vendor_items"))
             .distinct()
             .order_by("-created_at")
         )
@@ -351,6 +364,7 @@ class VendorOrderListView(ListAPIView):
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context["request"] = self.request
+        context["active_taxes"] = list(Tax.objects.filter(is_active=True))
         return context
 
 class VendorOrderDetailView(RetrieveAPIView):
@@ -359,22 +373,42 @@ class VendorOrderDetailView(RetrieveAPIView):
 
     def get_queryset(self):
         vendor = self.request.user
-        return Order.objects.filter(items__vendor=vendor).distinct()
+        vendor_items = OrderItem.objects.filter(vendor=vendor).select_related(
+                "variant",
+                "variant__product",
+                "vendor"
+            )
+        return (
+            Order.objects.filter(items__vendor=vendor)
+            .select_related("user", "shipping_address") 
+            .prefetch_related(Prefetch("items", queryset=vendor_items, to_attr="vendor_items"))
+            .distinct()
+        )
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context["request"] = self.request
+        context["active_taxes"] = list(Tax.objects.filter(is_active=True))
         return context
 
 # Payments
 class VendorPaymentListView(ListAPIView):
     serializer_class = VendorPaymentSerializer
     permission_classes = [IsVendor]
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         vendor = self.request.user
+        vendor_items = (
+            OrderItem.objects.filter(vendor=vendor)
+            .select_related("variant", "variant__product", "vendor")
+        )
         return (
             Payment.objects.filter(order__items__vendor=vendor)
+            .select_related("order")
+            .prefetch_related(
+                Prefetch("order__items", queryset=vendor_items, to_attr="vendor_items")
+            )
             .distinct()
             .order_by("-created_at")
         )
@@ -382,6 +416,7 @@ class VendorPaymentListView(ListAPIView):
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context["request"] = self.request
+        context["active_taxes"] = list(Tax.objects.filter(is_active=True))
         return context
 
 class VendorPaymentDetailView(RetrieveAPIView):
@@ -390,25 +425,51 @@ class VendorPaymentDetailView(RetrieveAPIView):
 
     def get_queryset(self):
         vendor = self.request.user
-        return Payment.objects.filter(order__items__vendor=vendor).distinct()
+        vendor_items = (
+            OrderItem.objects.filter(vendor=vendor)
+            .select_related("variant", "variant__product", "vendor")
+        )
+        return (
+            Payment.objects.filter(order__items__vendor=vendor)
+            .select_related("order")
+            .prefetch_related(
+                Prefetch("order__items", queryset=vendor_items, to_attr="vendor_items")
+            )
+            .distinct()
+        )
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context["request"] = self.request
+        context["active_taxes"] = list(Tax.objects.filter(is_active=True))
         return context
 
 # Invoices
 class VendorInvoiceListView(ListAPIView):
     serializer_class = VendorInvoiceSerializer
     permission_classes = [IsVendor]
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         vendor = self.request.user
-        return Invoice.objects.filter(order__items__vendor=vendor).distinct()
+        vendor_items = (
+            OrderItem.objects.filter(vendor=vendor)
+            .select_related("variant", "variant__product", "vendor")
+        )
+        return (
+            Invoice.objects.filter(order__items__vendor=vendor)
+            .select_related('order')
+            .prefetch_related(
+                Prefetch("order__items", queryset=vendor_items, to_attr="vendor_items")
+            )
+            .distinct()
+            .order_by('-issued_at')
+        )
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context["request"] = self.request
+        context["active_taxes"] = list(Tax.objects.filter(is_active=True))
         return context
 
 
@@ -418,9 +479,21 @@ class VendorInvoiceDetailView(RetrieveAPIView):
 
     def get_queryset(self):
         vendor = self.request.user
-        return Invoice.objects.filter(order__items__vendor=vendor).distinct()
+        vendor_items = (
+            OrderItem.objects.filter(vendor=vendor)
+            .select_related("variant", "variant__product", "vendor")
+        )
+        return (
+            Invoice.objects.filter(order__items__vendor=vendor)
+            .select_related('order')
+            .prefetch_related(
+                Prefetch("order__items", queryset=vendor_items, to_attr="vendor_items")
+            )
+            .distinct()
+        )
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context["request"] = self.request
+        context["active_taxes"] = list(Tax.objects.filter(is_active=True))
         return context

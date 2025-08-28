@@ -189,9 +189,7 @@ class VendorOrderSerializer(VendorOrderTotalsMixin, serializers.ModelSerializer)
         ]
 
     def get_items(self, obj):
-        vendor = self.context["request"].user
-        qs = obj.items.filter(vendor=vendor)
-        return VendorOrderItemSerializer(qs, many=True).data
+        return VendorOrderItemSerializer(getattr(obj, "vendor_items", []), many=True).data
 
     def get_vendor_subtotal(self, obj):
         return self.calculate_vendor_subtotal(obj)

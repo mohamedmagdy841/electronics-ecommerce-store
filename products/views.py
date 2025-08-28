@@ -23,7 +23,7 @@ from .serializers import (
     VendorVariantSpecificationSerializer,
     VendorCategorySerializer,
 )
-from .pagination import CustomProductPagination, RelatedLimitOffset, ReviewCursorPagination
+from .pagination import CustomPagination, RelatedLimitOffset, ReviewCursorPagination
 from django.core.cache import cache
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import ProductFilter
@@ -56,7 +56,7 @@ from drf_spectacular.utils import (
 )
 class ProductListAPIView(generics.ListAPIView):
     serializer_class = ProductSerializer
-    pagination_class = CustomProductPagination
+    pagination_class = CustomPagination
     filter_backends = [
         DjangoFilterBackend,
         filters.SearchFilter,
@@ -361,6 +361,13 @@ class ProductReviewDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 class VendorProductViewSet(viewsets.ModelViewSet):
     serializer_class = VendorProductSerializer
     permission_classes = [IsVendor, IsVendorOwner]
+    pagination_class = CustomPagination
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter
+    ]
+    filterset_class = ProductFilter
 
     def get_queryset(self):
         return Product.objects.filter(vendor=self.request.user)
@@ -368,6 +375,7 @@ class VendorProductViewSet(viewsets.ModelViewSet):
 class VendorProductVariantListCreateView(generics.ListCreateAPIView):
     serializer_class = VendorProductVariantSerializer
     permission_classes = [IsVendor, IsVendorOwner]
+    pagination_class = CustomPagination
     
     @cached_property
     def product(self):
@@ -407,6 +415,7 @@ class VendorProductImageListCreateView(generics.ListCreateAPIView):
     serializer_class = VendorProductImageSerializer
     permission_classes = [IsVendor, IsVendorOwner]
     parser_classes = [MultiPartParser, FormParser]
+    pagination_class = CustomPagination
     
     @cached_property
     def product(self):
@@ -441,6 +450,7 @@ class VendorVariantImageListCreateView(generics.ListCreateAPIView):
     serializer_class = VendorProductImageSerializer
     permission_classes = [IsVendor, IsVendorOwner]
     parser_classes = [MultiPartParser, FormParser]
+    pagination_class = CustomPagination
     
     @cached_property
     def product(self):
@@ -494,6 +504,7 @@ class VendorVariantImageDetailView(generics.RetrieveUpdateDestroyAPIView):
 class VendorProductSpecificationListCreateView(generics.ListCreateAPIView):
     serializer_class = VendorProductSpecificationSerializer
     permission_classes = [IsVendor, IsVendorOwner]
+    pagination_class = CustomPagination
     
     @cached_property
     def product(self):
@@ -526,6 +537,7 @@ class VendorProductSpecificationDetailView(generics.RetrieveUpdateDestroyAPIView
 class VendorVariantSpecificationListCreateView(generics.ListCreateAPIView):
     serializer_class = VendorVariantSpecificationSerializer
     permission_classes = [IsVendor, IsVendorOwner]
+    pagination_class = CustomPagination
     
     @cached_property
     def variant(self):
@@ -559,7 +571,19 @@ class VendorVariantSpecificationDetailView(generics.RetrieveUpdateDestroyAPIView
 class VendorCategoryViewSet(viewsets.ModelViewSet):
     serializer_class = VendorCategorySerializer
     permission_classes = [IsVendor]
+    pagination_class = CustomPagination
     
     def get_queryset(self):
         return Category.objects.filter(vendor=self.request.user).prefetch_related('children')
+    
+    # To make pagination work with prefetch_related
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
