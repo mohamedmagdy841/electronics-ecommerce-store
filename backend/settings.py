@@ -196,6 +196,12 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Home', 'description': 'Homepage widgets (latest, weekly deal)'},
         {'name': 'Reviews', 'description': 'Product review threads'},
     ],
+    
+    
+    'POSTPROCESSING_HOOKS': [
+        'drf_spectacular.hooks.postprocess_schema_enums',
+        'backend.schema_hooks.move_auth_to_accounts',
+    ],
 }
 
 SIMPLE_JWT = {

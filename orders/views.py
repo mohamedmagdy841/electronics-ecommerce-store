@@ -65,6 +65,13 @@ class ShippingAddressListCreate(ListCreateAPIView):
     ),
     put=extend_schema(
         tags=["Shipping Addresses"],
+        summary="Replace shipping address",
+        description="Full update (replace) of a shipping address.",
+        request=ShippingAddressSerializer,
+        responses=ShippingAddressSerializer,
+    ),
+    patch=extend_schema(
+        tags=["Shipping Addresses"],
         summary="Update shipping address",
         request=ShippingAddressSerializer,
         responses=ShippingAddressSerializer,
@@ -339,6 +346,12 @@ class InvoiceDetailView(RetrieveAPIView):
 
 # ---------VENDOR -----------
 # Orders
+@extend_schema(
+    tags=["Vendor Orders"],
+    summary="List vendor orders",
+    description="List all orders that contain items belonging to the authenticated vendor.",
+    responses=VendorOrderSerializer,
+)
 class VendorOrderListView(ListAPIView):
     serializer_class = VendorOrderSerializer
     permission_classes = [IsVendor]
@@ -367,6 +380,13 @@ class VendorOrderListView(ListAPIView):
         context["active_taxes"] = list(Tax.objects.filter(is_active=True))
         return context
 
+@extend_schema(
+    tags=["Vendor Orders"],
+    summary="Retrieve vendor order details",
+    description="Retrieve details of an order related to the authenticated vendor.",
+    parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
+    responses=VendorOrderSerializer,
+)
 class VendorOrderDetailView(RetrieveAPIView):
     serializer_class = VendorOrderSerializer
     permission_classes = [IsVendor]
@@ -392,6 +412,12 @@ class VendorOrderDetailView(RetrieveAPIView):
         return context
 
 # Payments
+@extend_schema(
+    tags=["Vendor Payments"],
+    summary="List vendor payments",
+    description="List all payments associated with the authenticated vendor.",
+    responses=VendorPaymentSerializer,
+)
 class VendorPaymentListView(ListAPIView):
     serializer_class = VendorPaymentSerializer
     permission_classes = [IsVendor]
@@ -419,6 +445,13 @@ class VendorPaymentListView(ListAPIView):
         context["active_taxes"] = list(Tax.objects.filter(is_active=True))
         return context
 
+@extend_schema(
+    tags=["Vendor Payments"],
+    summary="Retrieve vendor payment details",
+    description="Retrieve payment details related to the authenticated vendor.",
+    parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
+    responses=VendorPaymentSerializer,
+)
 class VendorPaymentDetailView(RetrieveAPIView):
     serializer_class = VendorPaymentSerializer
     permission_classes = [IsVendor]
@@ -445,6 +478,12 @@ class VendorPaymentDetailView(RetrieveAPIView):
         return context
 
 # Invoices
+@extend_schema(
+    tags=["Vendor Invoices"],
+    summary="List vendor invoices",
+    description="List all invoices associated with the authenticated vendor.",
+    responses=VendorInvoiceSerializer,
+)
 class VendorInvoiceListView(ListAPIView):
     serializer_class = VendorInvoiceSerializer
     permission_classes = [IsVendor]
@@ -472,7 +511,13 @@ class VendorInvoiceListView(ListAPIView):
         context["active_taxes"] = list(Tax.objects.filter(is_active=True))
         return context
 
-
+@extend_schema(
+    tags=["Vendor Invoices"],
+    summary="Retrieve vendor invoice details",
+    description="Retrieve details of an invoice related to the authenticated vendor.",
+    parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
+    responses=VendorInvoiceSerializer,
+)
 class VendorInvoiceDetailView(RetrieveAPIView):
     serializer_class = VendorInvoiceSerializer
     permission_classes = [IsVendor]
