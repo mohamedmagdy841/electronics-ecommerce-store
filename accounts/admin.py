@@ -1,6 +1,6 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
-from accounts.models import User, UserProfile
+from accounts.models import User, UserProfile, VendorProfile, PhoneOtp
 
 @admin.register(User)
 class UserAdmin(ModelAdmin):
@@ -29,3 +29,24 @@ class UserProfileAdmin(ModelAdmin):
         ('Important dates', {'fields': ('created_at', 'modified_at')}),
     )
 
+@admin.register(VendorProfile)
+class VendorProfileAdmin(ModelAdmin):
+    list_display = ('user', 'store_name', 'business_license', 'address', 'business_phone')
+    search_fields = ('user__email', 'user__username', 'store_name', 'business_phone')
+    list_filter = ('store_name',)
+    list_per_page = 10
+    readonly_fields = ('created_at', 'modified_at')
+    fieldsets = (
+        (None, {'fields': ('user', 'store_name', 'business_license')}),
+        ('Contact info', {'fields': ('address', 'business_phone')}),
+        ('Important dates', {'fields': ('created_at', 'modified_at')}),
+    )
+
+
+@admin.register(PhoneOtp)
+class PhoneOtpAdmin(ModelAdmin):
+    list_display = ('phone_number', 'otp', 'is_verified', 'created_at')
+    search_fields = ('phone_number',)
+    list_filter = ('is_verified',)
+    list_per_page = 10
+    readonly_fields = ('created_at',)

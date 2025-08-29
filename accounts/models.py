@@ -74,7 +74,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     class Meta:
         ordering = ['-created_at']
 
-
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     profile_picture = models.ImageField(
@@ -92,7 +91,7 @@ class UserProfile(models.Model):
     
     def __str__(self):
         return self.user.email
-    
+  
 class VendorProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="vendor_profile")
     store_name = models.CharField(max_length=100)

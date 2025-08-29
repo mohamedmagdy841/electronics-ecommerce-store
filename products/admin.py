@@ -2,7 +2,8 @@ from django.contrib import admin
 from unfold.admin import ModelAdmin
 from .models import (
     Category, Brand, Product, ProductVariant, Specification,
-    ProductSpecification, ProductImage, Tax, VariantSpecification
+    ProductSpecification, ProductImage,
+    Tax, VariantSpecification, ProductReview
 )
 from django.utils.html import format_html
 from import_export.admin import ImportExportModelAdmin
@@ -126,3 +127,10 @@ class TaxAdmin(ImportExportModelAdmin):
     list_filter = ['type', 'is_active']
     readonly_fields = ['created_at', 'updated_at']
 
+# ---- Review ----
+@admin.register(ProductReview)
+class ProductReviewAdmin(ModelAdmin):
+    list_display = ('id', 'user', 'product', 'rating', 'content', 'created_at')
+    search_fields = ('user__email', 'user__username', 'product__name', 'content')
+    list_filter = ('rating', 'created_at')
+    readonly_fields = ('created_at', 'updated_at')
