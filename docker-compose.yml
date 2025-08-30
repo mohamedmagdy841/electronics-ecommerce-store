@@ -1,11 +1,40 @@
 services:
-  redis:
-    image: redis:alpine
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: electroshop
     volumes:
-      - redis-data:/data
+      - static_volume:/app/staticfiles
+      - media_volume:/app/mediafiles
+      - sqlite_data:/app/db
+    env_file:
+      - .env
+    expose:
+      - "8000"
+    networks:
+      - custom-network
+    restart: unless-stopped
+
+  electroshop_nginx:
+    image: nginx:alpine
+    container_name: electroshop_nginx
+    depends_on:
+      - app
+    volumes:
+      - static_volume:/staticfiles:ro
+      - media_volume:/mediafiles:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./security-headers.conf:/etc/nginx/snippets/security-headers.conf:ro
+    networks:
+      - custom-network
+    restart: unless-stopped
+    
+networks:
+  custom-network:
+    external: true
 
 volumes:
-  redis-data:
+  static_volume:
+  media_volume:
+  sqlite_data:

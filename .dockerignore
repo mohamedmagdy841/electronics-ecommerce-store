@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs
+*.log
+
+# Local environment
+.env
+*.env
+.env.prod
+
+# OS or IDE
+.DS_Store
+.vscode/
+.idea/
+
+# DB
+# db.sqlite3
+
+# Media/static
+/mediafiles
+/staticfiles
+*.jpg
+*.png
+*.webp
+*.jpeg
+
+# Git
+.git
+.gitignore
+
+# Tests or coverage
+htmlcov/
+.coverage
+.pytest_cache/
