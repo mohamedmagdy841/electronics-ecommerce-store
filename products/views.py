@@ -32,28 +32,7 @@ from rest_framework.exceptions import NotFound, PermissionDenied
 from django.utils.functional import cached_property
 from rest_framework.parsers import MultiPartParser, FormParser
 
-from drf_spectacular.utils import (
-    extend_schema,
-    extend_schema_view,
-    OpenApiParameter,
-    OpenApiTypes,
-)
-
 # -------------------- Products --------------------
-
-@extend_schema(
-    tags=["Products"],
-    summary="List products",
-    description=(
-        "List products with filtering, search and ordering.\n\n"
-        "**Search fields:** name, description, brand__name, category__name, sku\n"
-        "**Ordering fields:** price, created_at"
-    ),
-    parameters=[
-        OpenApiParameter(name="search", type=OpenApiTypes.STR, location=OpenApiParameter.QUERY, required=False),
-        OpenApiParameter(name="ordering", type=OpenApiTypes.STR, location=OpenApiParameter.QUERY, required=False),
-    ],
-)
 class ProductListAPIView(generics.ListAPIView):
     serializer_class = ProductSerializer
     pagination_class = CustomPagination
@@ -74,15 +53,6 @@ class ProductListAPIView(generics.ListAPIView):
             Prefetch('variants', queryset=ProductVariant.objects.order_by('-is_default', 'id'))
         )
 
-@extend_schema(
-    tags=["Products"],
-    summary="Retrieve product detail",
-    parameters=[
-        OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH, description="Product slug"),
-        OpenApiParameter("variant", OpenApiTypes.INT, OpenApiParameter.QUERY, required=False,
-                         description="Optional variant ID to tailor the response"),
-    ],
-)
 class ProductDetailAPIView(generics.RetrieveAPIView):
     serializer_class = ProductDetailSerializer
     lookup_field = 'slug'
@@ -124,14 +94,7 @@ class ProductDetailAPIView(generics.RetrieveAPIView):
         context = super().get_serializer_context()
         context['variant_param'] = self.request.query_params.get('variant')
         return context
-
-@extend_schema(
-    tags=["Products"],
-    summary="List related products",
-    parameters=[
-        OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH, description="Slug of the reference product"),
-    ],
-)  
+ 
 class RelatedProductListAPIView(generics.ListAPIView):
     serializer_class = ProductSerializer
     pagination_class = RelatedLimitOffset
@@ -168,12 +131,6 @@ class RelatedProductListAPIView(generics.ListAPIView):
          
 
 # -------------------- Home Page Views --------------------
-
-@extend_schema(
-    tags=["Home"],
-    summary="Latest products",
-    description="Returns the most recently created products (cached).",
-)
 class LatestProductListAPIView(generics.ListAPIView):
     serializer_class = ProductSerializer
     
@@ -186,11 +143,6 @@ class LatestProductListAPIView(generics.ListAPIView):
             
         return products
 
-@extend_schema(
-    tags=["Home"],
-    summary="Weekly deal product",
-    description="Returns the active weekly-deal product (cached).",
-)  
 class WeeklyDealProductAPIView(generics.RetrieveAPIView):
     serializer_class = ProductSerializer
     
@@ -217,12 +169,6 @@ class WeeklyDealProductAPIView(generics.RetrieveAPIView):
     ## Most Popular Products
 
 # -------------------- Categories & Brands --------------------   
-
-@extend_schema(
-    tags=["Categories"],
-    summary="List top-level categories",
-    description="Returns root categories with their children (cached).",
-)
 class CategoryListAPIView(generics.ListAPIView):
     serializer_class = CategorySerializer
     
@@ -234,14 +180,7 @@ class CategoryListAPIView(generics.ListAPIView):
             cache.set("category_list", categories, timeout=60*60)
 
         return categories
-
-@extend_schema(
-    tags=["Categories"],
-    summary="List subcategories by parent",
-    parameters=[
-        OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH, description="Parent category slug"),
-    ],
-)   
+ 
 class SubcategoryListByCategoryAPIView(generics.ListAPIView):
     serializer_class = CategorySerializer
     
@@ -249,11 +188,6 @@ class SubcategoryListByCategoryAPIView(generics.ListAPIView):
         parent_slug = self.kwargs['slug']
         return Category.objects.filter(parent__slug=parent_slug)   
 
-@extend_schema(
-    tags=["Categories"],
-    summary="List subcategories",
-    description="Returns subcategories (non-root) (cached).",
-)
 class SubCategoryListAPIView(generics.ListAPIView):
     serializer_class = CategorySerializer
     
@@ -266,29 +200,11 @@ class SubCategoryListAPIView(generics.ListAPIView):
             
         return categories 
     
-@extend_schema(
-    tags=["Brands"],
-    summary="List brands",
-)
 class BrandListAPIView(generics.ListAPIView):
     queryset = Brand.objects.all()
     serializer_class = BrandSerializer
 
 # -------------------- Reviews --------------------
-
-@extend_schema_view(
-    get=extend_schema(
-        tags=["Reviews"],
-        summary="List product reviews",
-        parameters=[OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH, description="Product slug")],
-        description="Cursor-paginated top-level reviews. Replies are nested under each review.",
-    ),
-    post=extend_schema(
-        tags=["Reviews"],
-        summary="Create a product review",
-        description="Authenticated users can create a top-level review for the given product.",
-    ),
-)
 class ProductReviewListAPIView(generics.ListCreateAPIView):
     serializer_class = ProductReviewSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
@@ -320,11 +236,7 @@ class ProductReviewListAPIView(generics.ListCreateAPIView):
         context = super().get_serializer_context()
         context['product'] = self.product
         return context
-    
-@extend_schema(
-    tags=["Reviews"],
-    summary="Retrieve/Update/Delete a review",
-)
+
 class ProductReviewDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ProductReviewSerializer
     permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
@@ -358,12 +270,6 @@ class ProductReviewDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 # --------------- Vendor ----------------------
 # Products
-@extend_schema(
-    tags=["Vendor Products"],
-    summary="Vendor products CRUD",
-    description="Manage products for the authenticated vendor (list, create, retrieve, update, delete).",
-    responses=VendorProductSerializer,
-)
 class VendorProductViewSet(viewsets.ModelViewSet):
     serializer_class = VendorProductSerializer
     permission_classes = [IsVendor, IsVendorOwner]
@@ -378,20 +284,6 @@ class VendorProductViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Product.objects.filter(vendor=self.request.user)
 
-@extend_schema_view(
-    get=extend_schema(
-        tags=["Vendor Product Variants"],
-        summary="List product variants (vendor)",
-        parameters=[OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH, description="Product slug")],
-        responses=VendorProductVariantSerializer,
-    ),
-    post=extend_schema(
-        tags=["Vendor Product Variants"],
-        summary="Create product variant (vendor)",
-        request=VendorProductVariantSerializer,
-        responses={201: VendorProductVariantSerializer},
-    ),
-)
 class VendorProductVariantListCreateView(generics.ListCreateAPIView):
     serializer_class = VendorProductVariantSerializer
     permission_classes = [IsVendor, IsVendorOwner]
@@ -412,31 +304,6 @@ class VendorProductVariantListCreateView(generics.ListCreateAPIView):
         context['product'] = self.product
         return context
 
-@extend_schema_view(
-    get=extend_schema(
-        tags=["Vendor Product Variants"],
-        summary="Retrieve product variant (vendor)",
-        parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
-        responses=VendorProductVariantSerializer,
-    ),
-    put=extend_schema(
-        tags=["Vendor Product Variants"],
-        summary="Update product variant (vendor)",
-        request=VendorProductVariantSerializer,
-        responses=VendorProductVariantSerializer,
-    ),
-    patch=extend_schema(
-        tags=["Vendor Product Variants"],
-        summary="Partially update product variant (vendor)",
-        request=VendorProductVariantSerializer,
-        responses=VendorProductVariantSerializer,
-    ),
-    delete=extend_schema(
-        tags=["Vendor Product Variants"],
-        summary="Delete product variant (vendor)",
-        responses={204: OpenApiTypes.NONE},
-    ),
-)
 class VendorProductVariantRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = VendorProductVariantSerializer
     permission_classes = [IsVendor, IsVendorOwner]
@@ -456,21 +323,6 @@ class VendorProductVariantRetrieveUpdateDestroyView(generics.RetrieveUpdateDestr
         context['product'] = self.product
         return context
 
-
-@extend_schema_view(
-    get=extend_schema(
-        tags=["Vendor Product Images"],
-        summary="List product images (vendor)",
-        parameters=[OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH)],
-        responses=VendorProductImageSerializer,
-    ),
-    post=extend_schema(
-        tags=["Vendor Product Images"],
-        summary="Upload new product image (vendor)",
-        request=VendorProductImageSerializer,
-        responses={201: VendorProductImageSerializer},
-    ),
-)
 class VendorProductImageListCreateView(generics.ListCreateAPIView):
     serializer_class = VendorProductImageSerializer
     permission_classes = [IsVendor, IsVendorOwner]
@@ -489,32 +341,6 @@ class VendorProductImageListCreateView(generics.ListCreateAPIView):
         context["product"] = self.product
         return context
 
-
-@extend_schema_view(
-    get=extend_schema(
-        tags=["Vendor Product Images"],
-        summary="Retrieve product image (vendor)",
-        parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
-        responses=VendorProductImageSerializer,
-    ),
-    put=extend_schema(
-        tags=["Vendor Product Images"],
-        summary="Update product image (vendor)",
-        request=VendorProductImageSerializer,
-        responses=VendorProductImageSerializer,
-    ),
-    patch=extend_schema(
-        tags=["Vendor Product Images"],
-        summary="Partially update product image (vendor)",
-        request=VendorProductImageSerializer,
-        responses=VendorProductImageSerializer,
-    ),
-    delete=extend_schema(
-        tags=["Vendor Product Images"],
-        summary="Delete product image (vendor)",
-        responses={204: OpenApiTypes.NONE},
-    ),
-)
 class VendorProductImageDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = VendorProductImageSerializer
     permission_classes = [IsVendor, IsVendorOwner]
@@ -532,23 +358,6 @@ class VendorProductImageDetailView(generics.RetrieveUpdateDestroyAPIView):
         context["product"] = self.product
         return context
 
-@extend_schema_view(
-    get=extend_schema(
-        tags=["Vendor Variant Images"],
-        summary="List variant images (vendor)",
-        parameters=[
-            OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH),
-            OpenApiParameter("variant_id", OpenApiTypes.INT, OpenApiParameter.PATH),
-        ],
-        responses=VendorProductImageSerializer,
-    ),
-    post=extend_schema(
-        tags=["Vendor Variant Images"],
-        summary="Upload variant image (vendor)",
-        request=VendorProductImageSerializer,
-        responses={201: VendorProductImageSerializer},
-    ),
-)
 class VendorVariantImageListCreateView(generics.ListCreateAPIView):
     serializer_class = VendorProductImageSerializer
     permission_classes = [IsVendor, IsVendorOwner]
@@ -579,35 +388,6 @@ class VendorVariantImageListCreateView(generics.ListCreateAPIView):
         context["variant"] = self.variant
         return context
 
-@extend_schema_view(
-    get=extend_schema(
-        tags=["Vendor Variant Images"],
-        summary="Retrieve variant image (vendor)",
-        parameters=[
-            OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH),
-            OpenApiParameter("variant_id", OpenApiTypes.INT, OpenApiParameter.PATH),
-            OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH),
-        ],
-        responses=VendorProductImageSerializer,
-    ),
-    put=extend_schema(
-        tags=["Vendor Variant Images"],
-        summary="Update variant image (vendor)",
-        request=VendorProductImageSerializer,
-        responses=VendorProductImageSerializer,
-    ),
-    patch=extend_schema(
-        tags=["Vendor Variant Images"],
-        summary="Partially update variant image (vendor)",
-        request=VendorProductImageSerializer,
-        responses=VendorProductImageSerializer,
-    ),
-    delete=extend_schema(
-        tags=["Vendor Variant Images"],
-        summary="Delete variant image (vendor)",
-        responses={204: OpenApiTypes.NONE},
-    ),
-)
 class VendorVariantImageDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = VendorProductImageSerializer
     permission_classes = [IsVendor, IsVendorOwner]
@@ -633,20 +413,6 @@ class VendorVariantImageDetailView(generics.RetrieveUpdateDestroyAPIView):
         context["variant"] = self.variant
         return context
 
-@extend_schema_view(
-    get=extend_schema(
-        tags=["Vendor Product Specifications"],
-        summary="List product specifications (vendor)",
-        parameters=[OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH)],
-        responses=VendorProductSpecificationSerializer,
-    ),
-    post=extend_schema(
-        tags=["Vendor Product Specifications"],
-        summary="Create product specification (vendor)",
-        request=VendorProductSpecificationSerializer,
-        responses={201: VendorProductSpecificationSerializer},
-    ),
-)
 class VendorProductSpecificationListCreateView(generics.ListCreateAPIView):
     serializer_class = VendorProductSpecificationSerializer
     permission_classes = [IsVendor, IsVendorOwner]
@@ -663,32 +429,7 @@ class VendorProductSpecificationListCreateView(generics.ListCreateAPIView):
         context = super().get_serializer_context()
         context["product"] = self.product
         return context
-
-@extend_schema_view(
-    get=extend_schema(
-        tags=["Vendor Product Specifications"],
-        summary="Retrieve product specification (vendor)",
-        parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
-        responses=VendorProductSpecificationSerializer,
-    ),
-    put=extend_schema(
-        tags=["Vendor Product Specifications"],
-        summary="Update product specification (vendor)",
-        request=VendorProductSpecificationSerializer,
-        responses=VendorProductSpecificationSerializer,
-    ),
-    patch=extend_schema(
-        tags=["Vendor Product Specifications"],
-        summary="Partially update product specification (vendor)",
-        request=VendorProductSpecificationSerializer,
-        responses=VendorProductSpecificationSerializer,
-    ),
-    delete=extend_schema(
-        tags=["Vendor Product Specifications"],
-        summary="Delete product specification (vendor)",
-        responses={204: OpenApiTypes.NONE},
-    ),
-)   
+  
 class VendorProductSpecificationDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = VendorProductSpecificationSerializer
     permission_classes = [IsVendor, IsVendorOwner]
@@ -705,20 +446,6 @@ class VendorProductSpecificationDetailView(generics.RetrieveUpdateDestroyAPIView
         context["product"] = self.product
         return context
 
-@extend_schema_view(
-    get=extend_schema(
-        tags=["Vendor Variant Specifications"],
-        summary="List variant specifications (vendor)",
-        parameters=[OpenApiParameter("sku", OpenApiTypes.STR, OpenApiParameter.PATH)],
-        responses=VendorVariantSpecificationSerializer,
-    ),
-    post=extend_schema(
-        tags=["Vendor Variant Specifications"],
-        summary="Create variant specification (vendor)",
-        request=VendorVariantSpecificationSerializer,
-        responses={201: VendorVariantSpecificationSerializer},
-    ),
-)
 class VendorVariantSpecificationListCreateView(generics.ListCreateAPIView):
     serializer_class = VendorVariantSpecificationSerializer
     permission_classes = [IsVendor, IsVendorOwner]
@@ -735,32 +462,7 @@ class VendorVariantSpecificationListCreateView(generics.ListCreateAPIView):
         context = super().get_serializer_context()
         context["variant"] = self.variant
         return context
-
-@extend_schema_view(
-    get=extend_schema(
-        tags=["Vendor Variant Specifications"],
-        summary="Retrieve variant specification (vendor)",
-        parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
-        responses=VendorVariantSpecificationSerializer,
-    ),
-    put=extend_schema(
-        tags=["Vendor Variant Specifications"],
-        summary="Update variant specification (vendor)",
-        request=VendorVariantSpecificationSerializer,
-        responses=VendorVariantSpecificationSerializer,
-    ),
-    patch=extend_schema(
-        tags=["Vendor Variant Specifications"],
-        summary="Partially update variant specification (vendor)",
-        request=VendorVariantSpecificationSerializer,
-        responses=VendorVariantSpecificationSerializer,
-    ),
-    delete=extend_schema(
-        tags=["Vendor Variant Specifications"],
-        summary="Delete variant specification (vendor)",
-        responses={204: OpenApiTypes.NONE},
-    ),
-)  
+ 
 class VendorVariantSpecificationDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = VendorVariantSpecificationSerializer
     permission_classes = [IsVendor, IsVendorOwner]
@@ -778,12 +480,6 @@ class VendorVariantSpecificationDetailView(generics.RetrieveUpdateDestroyAPIView
         return context
     
 # Category
-@extend_schema(
-    tags=["Vendor Categories"],
-    summary="Vendor categories CRUD",
-    description="Manage categories for the authenticated vendor (list, create, retrieve, update, delete).",
-    responses=VendorCategorySerializer,
-)
 class VendorCategoryViewSet(viewsets.ModelViewSet):
     serializer_class = VendorCategorySerializer
     permission_classes = [IsVendor]

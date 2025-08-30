@@ -20,34 +20,11 @@ from .serializers import (
 )
 from .services.payments.resolver import PaymentGatewayResolver
 
-from drf_spectacular.utils import (
-    extend_schema,
-    extend_schema_view,
-    inline_serializer,
-    OpenApiResponse,
-    OpenApiParameter,
-    OpenApiTypes,
-)
 from products.permissions import IsVendor
 from products.pagination import CustomPagination
 from django.db.models import Prefetch
 
 # -------- Shipping Addresses --------
-@extend_schema_view(
-    get=extend_schema(
-        tags=["Shipping Addresses"],
-        summary="List my shipping addresses",
-        description="Get all saved shipping addresses for the authenticated user.",
-        responses=ShippingAddressSerializer,
-    ),
-    post=extend_schema(
-        tags=["Shipping Addresses"],
-        summary="Create new shipping address",
-        description="Add a new shipping address for the authenticated user.",
-        request=ShippingAddressSerializer,
-        responses={201: ShippingAddressSerializer},
-    ),
-)
 class ShippingAddressListCreate(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ShippingAddressSerializer
@@ -56,32 +33,6 @@ class ShippingAddressListCreate(ListCreateAPIView):
         return (ShippingAddress.objects.filter(user=self.request.user)
                 .order_by('-is_default', '-created_at'))
 
-@extend_schema_view(
-    get=extend_schema(
-        tags=["Shipping Addresses"],
-        summary="Retrieve shipping address",
-        parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
-        responses=ShippingAddressSerializer,
-    ),
-    put=extend_schema(
-        tags=["Shipping Addresses"],
-        summary="Replace shipping address",
-        description="Full update (replace) of a shipping address.",
-        request=ShippingAddressSerializer,
-        responses=ShippingAddressSerializer,
-    ),
-    patch=extend_schema(
-        tags=["Shipping Addresses"],
-        summary="Update shipping address",
-        request=ShippingAddressSerializer,
-        responses=ShippingAddressSerializer,
-    ),
-    delete=extend_schema(
-        tags=["Shipping Addresses"],
-        summary="Delete shipping address",
-        responses={204: OpenApiResponse(description="Deleted")},
-    ),
-)
 class ShippingAddressDetail(RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ShippingAddressSerializer
@@ -105,37 +56,16 @@ class ShippingAddressDetail(RetrieveUpdateDestroyAPIView):
                     candidate.save(update_fields=['is_default'])
 
 # -------- Coupons --------
-@extend_schema_view(
-    get=extend_schema(
-        tags=["Coupons"],
-        summary="List coupons (Admin only)",
-        responses=CouponSerializer,
-    ),
-)
 class CouponListView(ListAPIView):
     queryset = Coupon.objects.all()
     serializer_class = CouponSerializer
     permission_classes = [IsAdminUser]
 
-@extend_schema_view(
-    get=extend_schema(
-        tags=["Coupons"],
-        summary="Retrieve coupon (Admin only)",
-        parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
-        responses=CouponSerializer,
-    ),
-)
 class CouponDetailView(RetrieveAPIView):
     queryset = Coupon.objects.all()
     serializer_class = CouponSerializer
     permission_classes = [IsAdminUser]
-
-@extend_schema(
-    tags=["Coupons"],
-    summary="Public list of active coupons",
-    description="Returns only coupons that are active and public.",
-    responses=CouponSerializer,
-)
+    
 class PublicCouponListView(ListAPIView):
     serializer_class = CouponSerializer
 
@@ -143,12 +73,6 @@ class PublicCouponListView(ListAPIView):
         return Coupon.objects.filter(is_active=True, is_public=True)
 
 # -------- Orders --------
-@extend_schema(
-    tags=["Orders"],
-    summary="List my orders",
-    description="Get all orders belonging to the authenticated user.",
-    responses=OrderSerializer,
-)
 class OrderListView(ListAPIView):
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
@@ -158,24 +82,11 @@ class OrderListView(ListAPIView):
                 .filter(user=self.request.user)
                 .select_related('shipping_address', 'payment', 'user')
                 .prefetch_related('items', 'items__variant', 'items__variant__product'))
-
-@extend_schema(
-    tags=["Orders"],
-    summary="Create order",
-    description="Create a new order with cart items, shipping address, and optional coupon.",
-    request=CreateOrderSerializer,
-    responses={201: OrderSerializer},
-)    
+   
 class OrderCreateView(CreateAPIView):
     serializer_class = CreateOrderSerializer
     permission_classes = [IsAuthenticated]
     
-@extend_schema(
-    tags=["Orders"],
-    summary="Retrieve order details",
-    parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
-    responses=OrderSerializer,
-)  
 class OrderDetailView(RetrieveAPIView):
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
@@ -186,12 +97,6 @@ class OrderDetailView(RetrieveAPIView):
                 .select_related('shipping_address', 'payment', 'user')
                 .prefetch_related('items', 'items__variant', 'items__variant__product'))
 
-@extend_schema(
-    tags=["Orders"],
-    summary="List items for a specific order",
-    parameters=[OpenApiParameter("order_id", OpenApiTypes.INT, OpenApiParameter.PATH)],
-    responses=OrderItemSerializer,
-)
 class OrderItemListView(ListAPIView):
     serializer_class = OrderItemSerializer
     permission_classes = [IsAuthenticated]
@@ -203,54 +108,13 @@ class OrderItemListView(ListAPIView):
                 .select_related('variant', 'variant__product'))
 
 # -------- Payments --------
-@extend_schema(
-    tags=["Payments"],
-    summary="Retrieve payment details",
-    parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
-    responses=PaymentSerializer,
-)
 class PaymentDetailView(RetrieveAPIView):
     serializer_class = PaymentSerializer
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         return Payment.objects.filter(order__user=self.request.user)
-
-@extend_schema_view(
-    post=extend_schema(
-        tags=["Payments"],
-        summary="Payment gateway callback (POST)",
-        description="Handle async callback from payment gateway (e.g. Stripe, PayPal, Paymob).",
-        request=OpenApiTypes.OBJECT,
-        parameters=[
-            OpenApiParameter(
-                "gateway_type", OpenApiTypes.STR, OpenApiParameter.PATH,
-                description="Payment gateway type (stripe/paypal/paymob/...)"
-            ),
-        ],
-        responses={
-            200: OpenApiResponse(description="Processed successfully"),
-            400: OpenApiResponse(description="Invalid event or unhandled"),
-            404: OpenApiResponse(description="Payment not found"),
-        },
-    ),
-    get=extend_schema(
-        tags=["Payments"],
-        summary="Payment gateway callback (GET query)",
-        description="Handle redirect/callback with query parameters from gateway.",
-        parameters=[
-            OpenApiParameter(
-                "gateway_type", OpenApiTypes.STR, OpenApiParameter.PATH,
-                description="Payment gateway type (stripe/paypal/paymob/...)"
-            ),
-        ],
-        responses={
-            200: OpenApiResponse(description="Processed successfully"),
-            400: OpenApiResponse(description="Invalid event or unhandled"),
-            404: OpenApiResponse(description="Payment not found"),
-        },
-    ),
-)                  
+               
 class PaymentCallbackView(APIView):
     permission_classes = [AllowAny]
     
@@ -306,11 +170,6 @@ class PaymentCallbackView(APIView):
         return Response(result)
 
 # -------- Invoices --------
-@extend_schema(
-    tags=["Invoices"],
-    summary="List my invoices",
-    responses=InvoiceDisplaySerializer,
-)
 class InvoiceListView(ListAPIView):
     serializer_class = InvoiceDisplaySerializer
     permission_classes = [IsAuthenticated]
@@ -323,13 +182,7 @@ class InvoiceListView(ListAPIView):
                                   'order__items__variant',
                                   'order__items__variant__product')
                 )
-
-@extend_schema(
-    tags=["Invoices"],
-    summary="Retrieve invoice",
-    parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
-    responses=InvoiceDisplaySerializer,
-)   
+  
 class InvoiceDetailView(RetrieveAPIView):
     serializer_class = InvoiceDisplaySerializer
     permission_classes = [IsAuthenticated]
@@ -346,12 +199,6 @@ class InvoiceDetailView(RetrieveAPIView):
 
 # ---------VENDOR -----------
 # Orders
-@extend_schema(
-    tags=["Vendor Orders"],
-    summary="List vendor orders",
-    description="List all orders that contain items belonging to the authenticated vendor.",
-    responses=VendorOrderSerializer,
-)
 class VendorOrderListView(ListAPIView):
     serializer_class = VendorOrderSerializer
     permission_classes = [IsVendor]
@@ -380,13 +227,6 @@ class VendorOrderListView(ListAPIView):
         context["active_taxes"] = list(Tax.objects.filter(is_active=True))
         return context
 
-@extend_schema(
-    tags=["Vendor Orders"],
-    summary="Retrieve vendor order details",
-    description="Retrieve details of an order related to the authenticated vendor.",
-    parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
-    responses=VendorOrderSerializer,
-)
 class VendorOrderDetailView(RetrieveAPIView):
     serializer_class = VendorOrderSerializer
     permission_classes = [IsVendor]
@@ -412,12 +252,6 @@ class VendorOrderDetailView(RetrieveAPIView):
         return context
 
 # Payments
-@extend_schema(
-    tags=["Vendor Payments"],
-    summary="List vendor payments",
-    description="List all payments associated with the authenticated vendor.",
-    responses=VendorPaymentSerializer,
-)
 class VendorPaymentListView(ListAPIView):
     serializer_class = VendorPaymentSerializer
     permission_classes = [IsVendor]
@@ -445,13 +279,6 @@ class VendorPaymentListView(ListAPIView):
         context["active_taxes"] = list(Tax.objects.filter(is_active=True))
         return context
 
-@extend_schema(
-    tags=["Vendor Payments"],
-    summary="Retrieve vendor payment details",
-    description="Retrieve payment details related to the authenticated vendor.",
-    parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
-    responses=VendorPaymentSerializer,
-)
 class VendorPaymentDetailView(RetrieveAPIView):
     serializer_class = VendorPaymentSerializer
     permission_classes = [IsVendor]
@@ -478,12 +305,6 @@ class VendorPaymentDetailView(RetrieveAPIView):
         return context
 
 # Invoices
-@extend_schema(
-    tags=["Vendor Invoices"],
-    summary="List vendor invoices",
-    description="List all invoices associated with the authenticated vendor.",
-    responses=VendorInvoiceSerializer,
-)
 class VendorInvoiceListView(ListAPIView):
     serializer_class = VendorInvoiceSerializer
     permission_classes = [IsVendor]
@@ -511,13 +332,6 @@ class VendorInvoiceListView(ListAPIView):
         context["active_taxes"] = list(Tax.objects.filter(is_active=True))
         return context
 
-@extend_schema(
-    tags=["Vendor Invoices"],
-    summary="Retrieve vendor invoice details",
-    description="Retrieve details of an invoice related to the authenticated vendor.",
-    parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
-    responses=VendorInvoiceSerializer,
-)
 class VendorInvoiceDetailView(RetrieveAPIView):
     serializer_class = VendorInvoiceSerializer
     permission_classes = [IsVendor]
