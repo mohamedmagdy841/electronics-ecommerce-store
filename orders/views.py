@@ -23,6 +23,9 @@ from .services.payments.resolver import PaymentGatewayResolver
 from products.permissions import IsVendor
 from products.pagination import CustomPagination
 from django.db.models import Prefetch
+from django.utils.timezone import now
+from django.conf import settings
+from .tasks import send_order_email_async
 
 # -------- Shipping Addresses --------
 class ShippingAddressListCreate(ListCreateAPIView):
@@ -154,6 +157,16 @@ class PaymentCallbackView(APIView):
 
                 order.status = 'paid'
                 order.save(update_fields=['status'])
+                
+                context = {
+                    "customer_name": order.user.first_name or order.user.username,
+                    "customer_email": order.user.email,
+                    "vendor_name": order.items.first().vendor.vendor_profile.store_name if order.items.exists() else "Vendor",
+                    "vendor_email": order.items.first().vendor.email if order.items.exists() else settings.DEFAULT_FROM_EMAIL,
+                    "order_id": order_id,
+                    "current_year": now().year,
+                }
+                send_order_email_async.delay("Order Confirmation", "orders/order_created.html", context)
                     
         return Response(result)
     

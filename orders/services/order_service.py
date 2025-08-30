@@ -5,8 +5,10 @@ from orders.services.invoice_service import create_internal_invoice
 from products.models import Tax
 from ..models import Coupon, Order, OrderItem, Payment
 import uuid
-
+from django.utils.timezone import now
+from django.conf import settings
 from .payments.resolver import PaymentGatewayResolver
+from ..tasks import send_order_email_async
 
 def create_order(user, shipping_address, coupon_code=None, payment_method='cod'):
     cart_items = CartItem.objects.filter(cart__user=user)
@@ -64,6 +66,15 @@ def create_order(user, shipping_address, coupon_code=None, payment_method='cod')
         )
         
         if payment_method == 'cod':
+            context = {
+                "customer_name": user.first_name or user.username,
+                "customer_email": user.email,
+                "vendor_name": order.items.first().vendor.vendor_profile.store_name if order.items.exists() else "Vendor",
+                "vendor_email": order.items.first().vendor.email if order.items.exists() else settings.DEFAULT_FROM_EMAIL,
+                "order_id": order.id,
+                "current_year": now().year,
+            }
+            send_order_email_async.delay("Order Confirmation", "orders/order_created.html", context)
             create_internal_invoice(order, status="issued")
             for item in cart_items:
                 if item.variant.stock < item.quantity:
