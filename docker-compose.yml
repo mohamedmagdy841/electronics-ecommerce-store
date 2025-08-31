@@ -7,7 +7,6 @@ services:
     volumes:
       - static_volume:/app/staticfiles
       - media_volume:/app/mediafiles
-      - sqlite_data:/app/db
     env_file:
       - .env
     expose:
@@ -37,4 +36,3 @@ networks:
 volumes:
   static_volume:
   media_volume:
-  sqlite_data:
