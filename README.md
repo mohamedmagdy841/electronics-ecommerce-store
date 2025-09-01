@@ -92,5 +92,5 @@ ElectroShop is deployed using **Docker containers** on a VPS, with a **central N
 
 ## Demo
 
-* Swagger Docs: [https://electroshop.mo-magdy.com/api/docs/](https://electroshop.mo-magdy.com/api/v1/schema/swagger-ui/)
+* Swagger Docs: [https://electroshop.mo-magdy.com/api/v1/schema/swagger-ui/](https://electroshop.mo-magdy.com/api/v1/schema/swagger-ui/)
 * Postman Collection: [View Here](https://documenter.getpostman.com/view/38857071/2sB3HhtNhu)
