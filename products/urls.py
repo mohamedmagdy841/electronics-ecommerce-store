@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from debug_toolbar.toolbar import debug_toolbar_urls
+#from debug_toolbar.toolbar import debug_toolbar_urls
 
 urlpatterns = [
     path("", views.ProductListAPIView.as_view()),
@@ -15,5 +15,5 @@ urlpatterns = [
     path("<slug:slug>/review/<int:pk>/", views.ProductReviewDetailAPIView.as_view()),
     path("<slug:slug>/reviews/", views.ProductReviewListAPIView.as_view()),
     
-] + debug_toolbar_urls()
+] # + debug_toolbar_urls()
 

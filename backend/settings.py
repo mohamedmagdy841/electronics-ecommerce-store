@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'djoser',
     'social_django',
     'import_export',
-    "debug_toolbar",
+    # "debug_toolbar",
     'django_filters',
     'drf_spectacular',
     "corsheaders",
@@ -63,7 +63,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'social_django.middleware.SocialAuthExceptionMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware'
+    # 'debug_toolbar.middleware.DebugToolbarMiddleware'
 ]
 
 ROOT_URLCONF = 'backend.urls'
