@@ -6,31 +6,6 @@ The system is designed with scalability and maintainability in mind, using **Pos
 
 ---
 
-## Features
-
-* Containerized & deployed on VPS with Docker.
-* Redis for caching, throttling, and background task queues.
-* Celery for sending async emails (e.g., order confirmation, password reset).
-* Multiple payment gateways – Stripe, PayPal, and Paymob.
-* API Documentation – Swagger UI + Postman collection.
-* Full JWT Authentication (access/refresh with rotation & blacklist).
-
-  * Social login (Google & GitHub).
-  * OTP-based authentication.
-* Rate limiting – at both application level (Django DRF) and server level (Nginx).
-* Cart system – supports guest carts and logged-in carts.
-* Strategy Design Pattern for payments integration.
-* Class-Based Views with custom permission mixins.
-* Nginx – serves static/media files and handles SSL termination.
-* Simple CI/CD with GitHub Actions.
-
----
-
-## Database Schema (High-Level)
-[View Here](https://documenter.getpostman.com/)
-
----
-
 ## Deployment Architecture
 
 ElectroShop is deployed using **Docker containers** on a VPS, with a **central Nginx reverse proxy** routing traffic to internal services.
@@ -74,29 +49,30 @@ ElectroShop is deployed using **Docker containers** on a VPS, with a **central N
 
 ## Architecture Diagram
 
-```
-                        ┌──────────────┐
-Client (Browser)  ─────▶│ Central Nginx │───┐
-                        └──────┬───────┘   │
-               electroshop.mo-magdy.com    │
-                                          │
-                                ┌─────────▼─────────┐
-                                │ ElectroShop Nginx │
-                                │  (static/media)   │
-                                └─────────┬─────────┘
-                                          │
-                                ┌─────────▼─────────┐
-                                │     Gunicorn      │
-                                │   (DRF WSGI)      │
-                                └─────────┬─────────┘
-                                          │
-                    ┌─────────────────────┼──────────────────────┐
-                    │                     │                      │
-            ┌───────▼───────┐     ┌───────▼───────┐      ┌──────▼──────┐
-            │ Global Postgres│     │ Global Redis  │      │ Static/Media│
-            │   (Database)   │     │ (Cache/Queue) │      │   Volumes   │
-            └───────────────┘     └───────────────┘      └─────────────┘
-```
+<img width="681" height="337" alt="Untitled Diagram123 drawio" src="https://github.com/user-attachments/assets/eb76834d-b705-4b58-8a80-be55703d8fe1" />
+
+## Database Schema (High-Level)
+[View Here](https://drive.google.com/file/d/1NokZ_9K538UVBYaiUkb-G8N7De5PDdZG/view?usp=drive_link)
+
+---
+
+## Features
+
+* Containerized & deployed on VPS with Docker.
+* Redis for caching, throttling, and background task queues.
+* Celery for sending async emails (e.g., order confirmation, password reset).
+* Multiple payment gateways – Stripe, PayPal, and Paymob.
+* API Documentation – Swagger UI + Postman collection.
+* Full JWT Authentication (access/refresh with rotation & blacklist).
+
+  * Social login (Google & GitHub).
+  * OTP-based authentication.
+* Rate limiting – at both application level (Django DRF) and server level (Nginx).
+* Cart system – supports guest carts and logged-in carts.
+* Strategy Design Pattern for payments integration.
+* Class-Based Views with custom permission mixins.
+* Nginx – serves static/media files and handles SSL termination.
+* Simple CI/CD with GitHub Actions.
 
 ---
 
@@ -116,5 +92,5 @@ Client (Browser)  ─────▶│ Central Nginx │───┐
 
 ## Demo
 
-* Swagger Docs: [https://electroshop.mo-magdy.com/api/docs/](https://electroshop.mo-magdy.com/api/docs/)
-* Postman Collection: [View Here](https://documenter.getpostman.com/) *(replace with your link)*
+* Swagger Docs: [https://electroshop.mo-magdy.com/api/v1/schema/swagger-ui/](https://electroshop.mo-magdy.com/api/v1/schema/swagger-ui/)
+* Postman Collection: [View Here](https://documenter.getpostman.com/view/38857071/2sB3HhtNhu)
