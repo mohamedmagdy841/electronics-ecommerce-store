@@ -49,8 +49,17 @@ class ProductListAPIView(generics.ListAPIView):
         return Product.objects.select_related(
             'category', 'brand'
         ).prefetch_related(
-            'images', 'specs__specification', 'category__children', 
-            Prefetch('variants', queryset=ProductVariant.objects.order_by('-is_default', 'id'))
+            'specs__specification', 'category__children', 
+            Prefetch('variants', queryset=ProductVariant.objects.order_by('-is_default', 'id')),
+            Prefetch(
+                'images',
+                queryset=(
+                    ProductImage.objects
+                    .filter(variant__isnull=True)
+                    .order_by('-is_primary')
+                ),
+                to_attr='primary_images'
+            ),
         )
 
 class ProductDetailAPIView(generics.RetrieveAPIView):
