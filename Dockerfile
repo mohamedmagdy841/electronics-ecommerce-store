@@ -12,10 +12,8 @@ RUN apt-get update && apt-get install -y \
     libsqlite3-dev \
     libjpeg-dev \
     zlib1g-dev \
-<<<<<<< HEAD
-=======
+
     curl \
->>>>>>> prod
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
@@ -27,11 +25,8 @@ COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 EXPOSE 8000
-<<<<<<< HEAD
-=======
 
 LABEL org.opencontainers.image.source="https://github.com/mohamedmagdy841/electronics-ecommerce-store"
 LABEL org.opencontainers.image.description="Electronics e-commerce Django backend"
 
->>>>>>> prod
 ENTRYPOINT ["/app/entrypoint.sh"]

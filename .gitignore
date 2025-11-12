@@ -177,8 +177,5 @@ cython_debug/
 
 
 suggests endpoints for products and categories.docx
-<<<<<<< HEAD
-=======
 schema.sql
->>>>>>> prod
 architectur.docx
