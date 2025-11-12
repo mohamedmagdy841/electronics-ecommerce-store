@@ -24,4 +24,8 @@ COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 EXPOSE 8000
+
+LABEL org.opencontainers.image.source="https://github.com/mohamedmagdy841/electronics-ecommerce-store"
+LABEL org.opencontainers.image.description="Electronics e-commerce Django backend"
+
 ENTRYPOINT ["/app/entrypoint.sh"]

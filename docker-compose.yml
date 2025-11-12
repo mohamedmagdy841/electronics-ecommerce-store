@@ -1,8 +1,6 @@
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/mohamedmagdy841/electronics-ecommerce-store:latest
     container_name: electroshop
     volumes:
       - static_volume:/app/staticfiles
@@ -23,7 +21,7 @@ services:
     restart: unless-stopped
 
   electroshop_nginx:
-    image: nginx:alpine
+    image: nginx:1.29.0-alpine
     container_name: electroshop_nginx
     depends_on:
       app:
