@@ -1,12 +1,6 @@
 services:
   app:
-<<<<<<< HEAD
-    build:
-      context: .
-      dockerfile: Dockerfile
-=======
     image: ghcr.io/mohamedmagdy841/electronics-ecommerce-store:latest
->>>>>>> prod
     container_name: electroshop
     volumes:
       - static_volume:/app/staticfiles
@@ -17,15 +11,7 @@ services:
       - "8000"
     networks:
       - custom-network
-<<<<<<< HEAD
-    restart: unless-stopped
 
-  electroshop_nginx:
-    image: nginx:alpine
-    container_name: electroshop_nginx
-    depends_on:
-      - app
-=======
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/health"]
       interval: 30s
@@ -41,7 +27,6 @@ services:
     depends_on:
       app:
         condition: service_healthy
->>>>>>> prod
     volumes:
       - static_volume:/staticfiles:ro
       - media_volume:/mediafiles:ro
