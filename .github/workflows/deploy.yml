@@ -1,7 +1,7 @@
 name: Django CI/CD
 on:
   push:
-    branches: ["prod"]
+    branches: ["main"]
 
 permissions:
   contents: read
@@ -76,5 +76,4 @@ jobs:
       - name: Verify deployment
         run: |
           sleep 8
-          echo "${{ secrets.APP_URL }}/health"
           curl -f ${{ secrets.APP_URL }}/health || exit 1
