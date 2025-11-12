@@ -75,5 +75,6 @@ jobs:
             docker image prune -f
       - name: Verify deployment
         run: |
-          sleep 10
-          curl -fL ${{ secrets.APP_URL }}/health/ || exit 1
+          sleep 8
+          echo "${{ secrets.APP_URL }}/health"
+          curl -f ${{ secrets.APP_URL }}/health || exit 1
