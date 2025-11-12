@@ -76,4 +76,4 @@ jobs:
       - name: Verify deployment
         run: |
           sleep 10
-          curl -f ${{ secrets.APP_URL }}/health/ || exit 1
+          curl -fL ${{ secrets.APP_URL }}/health/ || exit 1
