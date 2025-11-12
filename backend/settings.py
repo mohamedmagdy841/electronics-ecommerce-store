@@ -15,9 +15,10 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG') == 'True'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS').split(',')
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 CSRF_TRUSTED_ORIGINS = os.environ.get(
-    'CSRF_TRUSTED_ORIGINS'
+    'CSRF_TRUSTED_ORIGINS',
+    'http://localhost,http://127.0.0.1'
 ).split(',')
 
 # Application definition
@@ -89,12 +90,24 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('POSTGRES_DB'),
+        'USER': os.environ.get('POSTGRES_USER'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
+        'HOST': os.environ.get('POSTGRES_HOST'),
+        'PORT': os.environ.get('POSTGRES_PORT'),
     }
 }
+
 
 
 # Password validation
@@ -131,10 +144,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
-
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = BASE_DIR / 'mediafiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -205,6 +218,8 @@ SPECTACULAR_SETTINGS = {
         'drf_spectacular.hooks.postprocess_schema_enums',
         'backend.schema_hooks.move_auth_to_accounts',
     ],
+
+    'DISABLE_ERRORS_AND_WARNINGS': True,
 }
 
 SIMPLE_JWT = {
@@ -254,7 +269,7 @@ INTERNAL_IPS = [
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/1',
+        'LOCATION': 'redis://global-redis:6379/0',
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         }
@@ -299,7 +314,8 @@ PAYMOB_API_KEY = os.environ.get('PAYMOB_API_KEY')
 PAYMOB_API_BASE = os.environ.get('PAYMOB_API_BASE')
 PAYMOBE_PUBLIC_KEY = os.environ.get('PAYMOBE_PUBLIC_KEY')
 PAYMOB_CURRENCY = os.environ.get('PAYMOB_CURRENCY')
-PAYMOB_INTEGRATIONS = os.environ.get('PAYMOB_INTEGRATIONS').split(',')
+PAYMOB_INTEGRATIONS = os.getenv("PAYMOB_INTEGRATIONS", "")
+PAYMOB_INTEGRATIONS = PAYMOB_INTEGRATIONS.split(",") if PAYMOB_INTEGRATIONS else []
 
 # Security headers
 SECURE_BROWSER_XSS_FILTER = True
@@ -319,7 +335,7 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv("SECURE_HSTS_INCLUDE_SUBDOMAINS", "Tr
 SECURE_HSTS_PRELOAD = os.getenv("SECURE_HSTS_PRELOAD", "True") == "True"
 
 # CORS
-CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 CORS_ALLOW_CREDENTIALS = True
 
 # Required if using HttpOnly cookies with cross-site frontend

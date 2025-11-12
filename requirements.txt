@@ -23,12 +23,14 @@ djangorestframework_simplejwt==5.5.1
 djoser==2.3.3
 drf-spectacular==0.28.0
 frozenlist==1.7.0
+gunicorn==23.0.0
 idna==3.10
 inflection==0.5.1
 jsonschema==4.25.0
 jsonschema-specifications==2025.4.1
 multidict==6.6.3
 oauthlib==3.3.1
+packaging==25.0
 pillow==11.3.0
 propcache==0.3.2
 pycparser==2.22
@@ -52,3 +54,4 @@ tzdata==2025.2
 uritemplate==4.2.0
 urllib3==2.5.0
 yarl==1.20.1
+psycopg2-binary==2.9.10
