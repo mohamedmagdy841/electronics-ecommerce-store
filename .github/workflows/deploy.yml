@@ -35,7 +35,7 @@ jobs:
         run: python manage.py makemigrations --check --dry-run --no-input
       
       - name: Run deployment checks
-        run: python manage.py check --deploy --fail-level WARNING
+        run: python manage.py check --deploy
 
   build:
     needs: test

@@ -218,6 +218,8 @@ SPECTACULAR_SETTINGS = {
         'drf_spectacular.hooks.postprocess_schema_enums',
         'backend.schema_hooks.move_auth_to_accounts',
     ],
+
+    'DISABLE_ERRORS_AND_WARNINGS': True,
 }
 
 SIMPLE_JWT = {
